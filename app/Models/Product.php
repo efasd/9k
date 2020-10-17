@@ -151,29 +151,28 @@ class Product extends Model implements HasMedia
         return convertToAssoc($array, 'name');
     }
 
-//    public function getEmployeeAttribute()
-//    {
-//        $hasCustomField = in_array(static::class, setting('employee', []));
-//        if (!$hasCustomField) {
-//            return [];
-//        }
-//        $array = $this->()
-//            ->join('custom_fields', 'custom_fields.id', '=', 'custom_field_values.custom_field_id')
-//            ->where('custom_fields.in_table', '=', true)
-//            ->get()->toArray();
-//
-//        return convertToAssoc($array, 'name');
-//    }
+   public function getEmployeeAttribute()
+   {
+       $hasCustomField = in_array(static::class, setting('employee', []));
+       if (!$hasCustomField) {
+           return [];
+       }
+        $array = $this->employeeProduct()
+            ->join('user', 'user.id', '=', 'employee_product.user_id')
+            ->get()->toArray();
+
+        return convertToAssoc($array, 'name');
+   }
+
+    public function employeeProduct()
+    {
+        return $this->morphMany('App\Models\EmployeeProduct', 'employee');
+    }
 
     public function customFieldsValues()
     {
         return $this->morphMany('App\Models\CustomFieldValue', 'customizable');
     }
-// todo that's it
-//    public function customFieldsValues()
-//    {
-//        return $this->morphMany('App\Models\CustomFieldValue', 'customizable');
-//    }
 
     /**
      * Add Media to api results

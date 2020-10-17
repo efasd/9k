@@ -14,8 +14,12 @@ use App\Criteria\Products\NearCriteria;
 use App\Criteria\Products\ProductsOfCategoriesCriteria;
 use App\Criteria\Products\ProductsOfFieldsCriteria;
 use App\Criteria\Products\TrendingWeekCriteria;
+use App\Criteria\Users\EmployeesCriteria;
 use App\Http\Controllers\Controller;
+use App\Http\Middleware\App;
+use App\Models\EmployeeProduct;
 use App\Models\Product;
+use App\Models\User;
 use App\Repositories\CustomFieldRepository;
 use App\Repositories\ProductRepository;
 use App\Repositories\UploadRepository;
@@ -43,7 +47,13 @@ class ProductAPIController extends Controller
     private $uploadRepository;
 
 
-    public function __construct(ProductRepository $productRepo, CustomFieldRepository $customFieldRepo, UploadRepository $uploadRepo)
+
+    public function __construct
+    (
+        ProductRepository $productRepo,
+        CustomFieldRepository $customFieldRepo,
+        UploadRepository $uploadRepo
+    )
     {
         parent::__construct();
         $this->productRepository = $productRepo;
@@ -220,13 +230,13 @@ class ProductAPIController extends Controller
     public function getEmployees($id, Request $request)
     {
         $product = $this->productRepository->findWithoutFail($id);
-        //$customFields = $this->customFieldRepository->findByField('custom_field_model', $this->productRepository->model());
-
-//        try {
-//            $product->customFieldsValues()->createMany($customFields);
-//        } catch (ValidatorException $e) {
-//            return $this->sendError($e->getMessage());
-//        }
+        $employeeList = [];
+        $employeeProduct = EmployeeProduct::where('product_id', $product->id)->get();
+        foreach($employeeProduct as $employeeId) {
+            $employee = User::find($employeeId->user_id);
+             array_push($employeeList, $employee);
+        }
+         $product['employees'] = $employeeList;
         return $product;
     }
 }

@@ -41,6 +41,7 @@ class ProductRepository extends BaseRepository implements CacheableInterface
         'unit',
         'featured',
         'market_id',
+        'employee_id',
         'category_id'
     ];
 
@@ -57,8 +58,17 @@ class ProductRepository extends BaseRepository implements CacheableInterface
      **/
     public function myProducts()
     {
-        return Product::join("user_markets", "user_markets.market_id", "=", "products.market_id")
+        return Product::join("user_markets", "user_markets.product_id", "=", "products.market_id")
             ->where('user_markets.user_id', auth()->id())->get();
+    }
+
+    /**
+     * get my products
+     **/
+    public function myEmployee()
+    {
+        return Product::join("employee_product", "employee_product.", "=", "products.id")
+            ->where('employee_product.user_id', auth()->id())->get();
     }
 
     public function groupedByMarkets()
@@ -66,9 +76,20 @@ class ProductRepository extends BaseRepository implements CacheableInterface
         $products = [];
         foreach ($this->all() as $model) {
             if(!empty($model->market)){
-            $products[$model->market->name][$model->id] = $model->name;
-        }
+                $products[$model->market->name][$model->id] = $model->name;
+            }
         }
         return $products;
+    }
+
+    public function groupedByEmployee()
+    {
+        $employee = [];
+        foreach ($this->all() as $model) {
+            if(!empty($model->employee)){
+                $employee[$model->employee->name][$model->id] = $model->name;
+            }
+        }
+        return $employee;
     }
 }
