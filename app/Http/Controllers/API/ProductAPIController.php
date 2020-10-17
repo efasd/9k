@@ -237,6 +237,7 @@ class ProductAPIController extends Controller
              array_push($employeeList, $employee);
         }
          $product['employees'] = $employeeList;
+         $product['appointment'] = $employeeList;
         return $product;
     }
 }
