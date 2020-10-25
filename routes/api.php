@@ -58,6 +58,10 @@ Route::prefix('product')->group(function () {
     Route::get('employee/{id}', 'API\ProductAPIController@getEmployees');
 });
 
+Route::prefix('employee')->group(function () {
+    Route::get('appointment/{userId}', 'API\UserAPIController@getAppointment');
+});
+
 
 Route::resource('faqs', 'API\FaqAPIController');
 Route::resource('market_reviews', 'API\MarketReviewAPIController');

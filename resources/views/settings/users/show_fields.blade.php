@@ -77,4 +77,3 @@
     <p>{!! $user->updated_at !!}</p>
   </div>
 </div>
-
