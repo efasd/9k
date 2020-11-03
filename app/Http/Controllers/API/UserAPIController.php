@@ -246,7 +246,6 @@ class UserAPIController extends Controller
         }
         $user['appointments'] = $employeeAppointments;
         return $user;
-        // dd($employeeAppointment);
     }
 
     function getDateSplice($date, $startDate, $endDate, $duration) {
