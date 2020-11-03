@@ -52,7 +52,7 @@ Route::resource('faq_categories', 'API\FaqCategoryAPIController');
 Route::get('products/categories', 'API\ProductAPIController@categories');
 Route::resource('products', 'API\ProductAPIController');
 Route::resource('galleries', 'API\GalleryAPIController');
-Route::resource('product_reviews', 'API\ProductReviewAPIController');
+Route::resource('product_reviews', 'API\ProductReviewAPIController');   
 
 Route::prefix('product')->group(function () {
     Route::get('employee/{id}', 'API\ProductAPIController@getEmployees');
