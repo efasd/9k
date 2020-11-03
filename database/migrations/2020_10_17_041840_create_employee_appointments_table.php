@@ -14,7 +14,16 @@ class CreateEmployeeAppointmentsTable extends Migration
     public function up()
     {
         Schema::create('employee_appointments', function (Blueprint $table) {
-            $table->bigIncrements('id');
+            $table->bigIncrements('id')->unsigned();
+            $table->integer('is_active');
+            $table->integer('duration_date');
+            $table->time('start_date');
+            $table->time('end_date');
+            $table->date('active_day');
+            $table->integer('user_id')->unsigned();
+            $table->integer('product_id')->unsigned();
+            $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade')->onUpdate('cascade');
+            $table->foreign('product_id')->references('id')->on('products')->onDelete('cascade')->onUpdate('cascade');
             $table->timestamps();
         });
     }

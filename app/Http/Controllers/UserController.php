@@ -23,6 +23,8 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Response;
 use Prettus\Validator\Exceptions\ValidatorException;
+use DB;
+use DateTime;
 
 class UserController extends Controller
 {
@@ -237,19 +239,20 @@ class UserController extends Controller
         }
 
         $user = $this->userRepository->findWithoutFail($id);
-
-
         if (empty($user)) {
             Flash::error('User not found');
             return redirect(route('users.profile'));
         }
         $customFields = $this->customFieldRepository->findByField('custom_field_model', $this->userRepository->model());
-
         $input = $request->all();
         if (!auth()->user()->can('permissions.index')) {
             unset($input['roles']);
         } else {
             $input['roles'] = isset($input['roles']) ? $input['roles'] : [];
+        }
+
+        if ($input['appointment_start'] && $input['appointment_end'] && $input['user_appointment_duration']) {
+            $this->setAppointment($input, $id);
         }
         if (empty($input['password'])) {
             unset($input['password']);
@@ -284,6 +287,61 @@ class UserController extends Controller
 
         return redirect()->back();
 
+    }
+
+    public function setAppointment($input, $id) {
+        $startDates = date_create($input['active_date']);
+        $endDate = date_create($input['active_date']);
+
+        $startDate = date_time_set($startDates, date('H', strtotime($input['appointment_start'])), date('i', strtotime($input['appointment_start'])));
+        $endDate = date_time_set($endDate, date('H', strtotime($input['appointment_end'])), date('i', strtotime($input['appointment_end'])));
+        $betweenDates = [];
+        $i = 0;
+        $dates = array();
+        $startDateNew = new DateTime($startDate->format('Y-m-d H:i:s'));
+        // dd($startDateNew, $endDate);
+        while($startDateNew < $endDate) {
+            $i++;
+            $nextHourMinute = date('H:i', strtotime($startDateNew->format('H:i')) + $input['user_appointment_duration'] * 60);
+            $startDateNew2 = new DateTime($startDateNew->format('Y-m-d H:i:s'));
+            $nextEndTime = date_time_set($startDateNew2, date('H', strtotime($nextHourMinute)), date('i', strtotime($nextHourMinute)));
+            // dd($startDate, $startDateNew);
+            $dates['startTime'] = $startDateNew;
+            $dates['endDate'] = $nextEndTime;
+            array_push($betweenDates, $dates);
+            $startDateNew = $nextEndTime;
+        }
+
+        $tableResult = [];
+        foreach ($betweenDates as $betweenDate) {
+            $table = DB::table('employee_appointments')
+                ->updateOrInsert(
+                    ['user_id' => $id, 'active_day' => $input['active_date'], 'start_date' => $betweenDate['startTime']],
+                    [
+                        'start_date' => $betweenDate['startTime'],
+                        'end_date' => $betweenDate['endDate'],
+                        'duration_date' => $input['user_appointment_duration'],
+                        'user_id' => $id,
+                        'product_id' => 46,
+                        'active_day' => $input['active_date']
+                    ]
+                );
+            array_push($tableResult, $table);
+        }
+        dd($tableResult);
+        return $tableResult;
+        DB::table('employee_appointments')
+            ->updateOrInsert(
+                ['user_id' => $id, 'active_day' => $input['active_date']],
+                [
+                    'start_date' => $input['appointment_start'],
+                    'end_date' => $input['appointment_end'],
+                    'duration_date' => $input['user_appointment_duration'],
+                    'user_id' => $id,
+                    'product_id' => 46,
+                    'active_day' => $input['active_date']
+                ]
+            );
     }
 
     /**

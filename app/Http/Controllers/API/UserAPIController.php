@@ -10,6 +10,7 @@
 namespace App\Http\Controllers\API;
 
 use App\Http\Controllers\Controller;
+use App\Models\EmployeeAppointment;
 use App\Models\User;
 use App\Repositories\CustomFieldRepository;
 use App\Repositories\RoleRepository;
@@ -225,5 +226,31 @@ class UserAPIController extends Controller
             return $this->sendError('Reset link not sent', 401);
         }
 
+    }
+
+    function getAppointment($userId) {
+
+        $user = $this->userRepository->findWithoutFail($userId);
+
+        if (empty($user)) {
+            return $this->sendResponse([
+                'error' => true,
+                'code' => 404,
+            ], 'User not found');
+        }
+
+        $employeeAppointments = [];
+        $employeeAppointment = EmployeeAppointment::where('user_id', $user->id)->get();
+        foreach($employeeAppointment as $appointment) {
+            array_push($employeeAppointments, $appointment);
+        }
+        $user['appointments'] = $employeeAppointments;
+        return $user;
+        // dd($employeeAppointment);
+    }
+
+    function getDateSplice($date, $startDate, $endDate, $duration) {
+        date_time_set($date, $startDate("H"), $startDate('i'));
+        dd($date);
     }
 }
