@@ -125,18 +125,6 @@ class ProductAPIController extends Controller
      */
     public function show(Request $request, $id)
     {
-
-//        $product = $this->productRepository->findWithoutFail($id);
-//        $employeeList = [];
-//        $employeeProduct = EmployeeProduct::where('product_id', $product->id)->get();
-//        foreach($employeeProduct as $employeeId) {
-//            $employee = User::find($employeeId->user_id);
-//            array_push($employeeList, $employee);
-//        }
-//        $product['employees'] = $employeeList;
-//        $product['appointment'] = $employeeList;
-//        return $product;
-
         /** @var Product $product */
         if (!empty($this->productRepository)) {
             try{

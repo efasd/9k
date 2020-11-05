@@ -20,9 +20,12 @@ class CreateEmployeeAppointmentsTable extends Migration
             $table->time('start_date');
             $table->time('end_date');
             $table->date('active_day');
-            $table->integer('user_id')->unsigned();
+            $table->string('description');
+            $table->integer('employee_id')->unsigned();
+            $table->integer('user_id')->unsigned()->nullable();
             $table->integer('product_id')->unsigned();
-            $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade')->onUpdate('cascade');
+            $table->foreign('employee_id')->references('id')->on('users')->onDelete('cascade')->onUpdate('cascade');
+            $table->foreign('user_id')->references('id')->on('users');
             $table->foreign('product_id')->references('id')->on('products')->onDelete('cascade')->onUpdate('cascade');
             $table->timestamps();
         });

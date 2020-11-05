@@ -30,6 +30,9 @@ class CreateMarketsTable extends Migration
             $table->string('phone', 50)->nullable();
             $table->string('mobile', 50)->nullable();
             $table->text('information')->nullable();
+            $table->time('start_date');
+            $table->time('end_date');
+            $table->integer('duration_range');
             $table->double('admin_commission', 8, 2)->nullable()->default(0);
             $table->double('delivery_fee', 8, 2)->nullable()->default(0);
             $table->double('delivery_range', 8, 2)->nullable()->default(0);//added
@@ -48,6 +51,6 @@ class CreateMarketsTable extends Migration
      */
     public function down()
     {
-        Schema::drop('markets');
+        Schema::dropIfExists('markets');
     }
 }
