@@ -284,7 +284,7 @@ class UserAPIController extends Controller
                 array_push($tableResult, $table);
             }
             if(count($tableResult) > 0) {
-                return $this->sendResponse(true, 'Цаг захиалга амжилттай үүслээ');
+                return $this->sendResponse(true, $tableResult);
             }
             return $this->sendResponse(false, 'Үүсгэж чадсангүй');
         }
