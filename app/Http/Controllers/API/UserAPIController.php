@@ -20,6 +20,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
 use Prettus\Validator\Exceptions\ValidatorException;
+use DB;
+use DateTime;
 
 class UserAPIController extends Controller
 {
@@ -228,6 +230,78 @@ class UserAPIController extends Controller
 
     }
 
+    function getDateFormat(Request $request) {
+        $appointment = DB::table('employee_appointments')
+            ->where('active_day', 'like', '%'.$request->input('date').'%')
+            ->where('is_active', '0')
+            ->get();
+
+        $market = DB::table('markets')
+            ->find($request->input('marketId'));
+
+        if ($market->start_date == null || $market->end_date == null) {
+            return $this->sendResponse(false, 'Маркет дээр эхлэх болон дуусах хугацаа оруулаагүй байна');
+        }
+        if($appointment->count() > 0) {
+            return $this->sendResponse(true, $appointment);
+        } else {
+
+            $startDate = date_time_set(date_create($request->input('date')), date('H', strtotime($market->start_date)), date('i', strtotime($market->start_date)));
+            $endDate = date_time_set(date_create($request->input('date')), date('H', strtotime($market->end_date)), date('i', strtotime($market->end_date)));
+            $betweenDates = [];
+            while($startDate < $endDate) {
+                $dates = array();
+                $nextHourMinute = date('H:i', strtotime($startDate->format('H:i')) + 90 * 60);
+
+                $activeDay = new DateTime(date_create($request->input('date'))->format('Y-m-d H:i:s'));
+
+                $startDateClone = new DateTime($startDate->format('Y-m-d H:i:s'));
+                $nextEndTime = date_time_set($startDateClone, date('H', strtotime($nextHourMinute)), date('i', strtotime($nextHourMinute)));
+
+                $dates['startTime'] = $startDate;
+                $dates['endDate'] = $nextEndTime;
+                $dates['activeDate'] = $activeDay;
+
+                array_push($betweenDates, $dates);
+                $startDate = $nextEndTime;
+            }
+
+            $tableResult = [];
+
+            foreach ($betweenDates as $betweenDate) {
+                $table = DB::table('employee_appointments')
+                    ->updateOrInsert(
+                        ['employee_id' => $request->input('employeeId'), 'active_day' => $betweenDate['activeDate'], 'start_date' => $betweenDate['startTime']],
+                        [
+                            'start_date' => $betweenDate['startTime'],
+                            'end_date' => $betweenDate['endDate'],
+                            'duration_date' => 90,
+                            'employee_id' => $request->input('employeeId'),
+                            'product_id' => 46,
+                            'active_day' => $betweenDate['activeDate']
+                        ]
+                    );
+                array_push($tableResult, $table);
+            }
+            if(count($tableResult) > 0) {
+                return $this->sendResponse(true, 'Цаг захиалга амжилттай үүслээ');
+            }
+            return $this->sendResponse(false, 'Үүсгэж чадсангүй');
+        }
+    }
+
+    function setAppointment(Request $request) {
+        $table = DB::table('employee_appointments')
+            ->where('id', $request->input('appointmentId'))
+            ->update(
+                ['user_id' => $request->input('userId'), 'is_active' => 1]
+            );
+        if($table > 0) {
+            return $this->sendResponse(false, 'Амжилттай бүртгэгдлээ');
+        }
+        return $this->sendResponse(false, 'Бүртгэгдсэн цаг байна');
+    }
+
     function getAppointment($userId) {
 
         $user = $this->userRepository->findWithoutFail($userId);
@@ -246,10 +320,5 @@ class UserAPIController extends Controller
         }
         $user['appointments'] = $employeeAppointments;
         return $user;
-    }
-
-    function getDateSplice($date, $startDate, $endDate, $duration) {
-        date_time_set($date, $startDate("H"), $startDate('i'));
-        dd($date);
     }
 }

@@ -251,9 +251,9 @@ class UserController extends Controller
             $input['roles'] = isset($input['roles']) ? $input['roles'] : [];
         }
 
-        if ($input['appointment_start'] && $input['appointment_end'] && $input['user_appointment_duration']) {
-            $this->setAppointment($input, $id);
-        }
+//        if ($input['appointment_start'] && $input['appointment_end'] && $input['user_appointment_duration']) {
+//            $this->setAppointment($input, $id);
+//        }
         if (empty($input['password'])) {
             unset($input['password']);
         } else {
@@ -291,45 +291,65 @@ class UserController extends Controller
 
     public function setAppointment($input, $id) {
         $startDates = date_create($input['active_date']);
-        $endDate = date_create($input['active_date']);
+        $endDate = date_create($input['active_date_end']);
 
         $startDate = date_time_set($startDates, date('H', strtotime($input['appointment_start'])), date('i', strtotime($input['appointment_start'])));
+        $endDateToDay = date_time_set(date_create($input['active_date']), date('H', strtotime($input['appointment_end'])), date('i', strtotime($input['appointment_end'])));
+
         $endDate = date_time_set($endDate, date('H', strtotime($input['appointment_end'])), date('i', strtotime($input['appointment_end'])));
         $betweenDates = [];
-        $i = 0;
         $dates = array();
-        $startDateNew = new DateTime($startDate->format('Y-m-d H:i:s'));
-        // dd($startDateNew, $endDate);
-        while($startDateNew < $endDate) {
-            $i++;
-            $nextHourMinute = date('H:i', strtotime($startDateNew->format('H:i')) + $input['user_appointment_duration'] * 60);
-            $startDateNew2 = new DateTime($startDateNew->format('Y-m-d H:i:s'));
-            $nextEndTime = date_time_set($startDateNew2, date('H', strtotime($nextHourMinute)), date('i', strtotime($nextHourMinute)));
-            // dd($startDate, $startDateNew);
-            $dates['startTime'] = $startDateNew;
-            $dates['endDate'] = $nextEndTime;
-            array_push($betweenDates, $dates);
-            $startDateNew = $nextEndTime;
-        }
+        $interval = date_diff($endDate, $startDate);
 
+        for($i = 0; $i <= $interval->days; $i++) {
+
+            $startDateNew = new DateTime($startDate->format('Y-m-d H:i:s'));
+            $endDateToDayStart = new DateTime($endDateToDay->format('Y-m-d H:i:s'));
+
+            while($startDateNew < $endDateToDayStart) {
+                $nextHourMinute = date('H:i', strtotime($startDateNew->format('H:i')) + $input['user_appointment_duration'] * 60);
+
+                $startDateNew->modify('+'.$i.' day');
+                $endDateToDayStart->modify('+'.$i.' day');
+
+                if ($i == 3) {
+                    dd($startDateNew, $endDateToDayStart, $nextHourMinute);
+                }
+
+                $activeDay = new DateTime(date_create($input['active_date'])->format('Y-m-d H:i:s'));
+                $activeDay->modify('+'.$i.' day');
+
+                $startDateClone = new DateTime($startDateNew->format('Y-m-d H:i:s'));
+                $nextEndTime = date_time_set($startDateClone, date('H', strtotime($nextHourMinute)), date('i', strtotime($nextHourMinute)));
+
+                $dates['startTime'] = $startDateNew;
+                $dates['endDate'] = $nextEndTime;
+                $dates['activeDate'] = $activeDay;
+
+                array_push($betweenDates, $dates);
+                $startDateNew = $nextEndTime;
+            }
+            $i++;
+        }
         $tableResult = [];
+        dd($betweenDates);
         foreach ($betweenDates as $betweenDate) {
             $table = DB::table('employee_appointments')
                 ->updateOrInsert(
-                    ['user_id' => $id, 'active_day' => $input['active_date'], 'start_date' => $betweenDate['startTime']],
+                    ['user_id' => $id, 'active_day' => $betweenDate['activeDate'], 'start_date' => $betweenDate['startTime']],
                     [
                         'start_date' => $betweenDate['startTime'],
                         'end_date' => $betweenDate['endDate'],
                         'duration_date' => $input['user_appointment_duration'],
                         'user_id' => $id,
                         'product_id' => 46,
-                        'active_day' => $input['active_date']
+                        'active_day' => $betweenDate['activeDate']
                     ]
                 );
             array_push($tableResult, $table);
         }
-        dd($tableResult);
-        return $tableResult;
+//        dd($tableResult);
+//        return $tableResult;
         DB::table('employee_appointments')
             ->updateOrInsert(
                 ['user_id' => $id, 'active_day' => $input['active_date']],

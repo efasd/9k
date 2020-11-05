@@ -60,6 +60,8 @@ Route::prefix('product')->group(function () {
 
 Route::prefix('employee')->group(function () {
     Route::get('appointment/{userId}', 'API\UserAPIController@getAppointment');
+    Route::post('appointment/getAppointment', 'API\UserAPIController@getDateFormat');
+    Route::post('appointment/setAppointment', 'API\UserAPIController@setAppointment');
 });
 
 
