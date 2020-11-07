@@ -272,7 +272,7 @@ class UserAPIController extends Controller
 
             $tableResult = [];
             foreach ($betweenDates as $betweenDate) {
-                $isInserted = DB::table('employee_appointments')
+                $inserted = DB::table('employee_appointments')
                     ->updateOrInsert(
                         ['employee_id' => $request->input('employeeId'), 'active_day' => $betweenDate['activeDate'], 'start_date' => $betweenDate['startTime']],
                         [
@@ -280,12 +280,12 @@ class UserAPIController extends Controller
                             'end_date' => $betweenDate['endDate'],
                             'duration_date' => 90,
                             'employee_id' => $request->input('employeeId'),
-                            'product_id' => 46,
+                            'product_id' => $request->input('productId'),
                             'active_day' => $betweenDate['activeDate'],
                             'created_at' => date('Y-m-d H:i:s'),
                         ]
                     );
-                if ($isInserted) {
+                if ($inserted) {
                     $getTime = $betweenDate['startTime']->format("H:i");
                     $employeeAppointment = DB::table('employee_appointments')
                         ->where([
@@ -307,12 +307,13 @@ class UserAPIController extends Controller
      * @Parameter "appointmentId" you chosen employee appointment
      * @Parameter "userId" user who want to use id
      * @Parameter "employeeId" chosen employee
+     * @Parameter "productId" chosen product
      */
     function setEmployeeAppointment(Request $request) {
         $table = DB::table('employee_appointments')
             ->where('id', $request->input('appointmentId'))
             ->update(
-                ['user_id' => $request->input('userId'), 'is_active' => 1]
+                ['user_id' => $request->input('userId'), 'product_id' => $request->input('productId'), 'is_active' => 1]
             );
         if($table > 0) {
             return $this->sendResponse(false, 'Амжилттай бүртгэгдлээ');
