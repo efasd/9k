@@ -34,8 +34,8 @@ class CreateOrdersTable extends Migration
             $table->timestamps();
             $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade')->onUpdate('cascade');
             $table->foreign('order_status_id')->references('id')->on('order_statuses')->onDelete('cascade')->onUpdate('cascade');
-            $table->foreign('driver_id')->references('id')->on('users')->onDelete('set null')->onUpdate('set null');
-            $table->foreign('delivery_address_id')->references('id')->on('delivery_addresses')->onDelete('set null')->onUpdate('set null');
+            $table->foreign('driver_id')->references('id')->on('users');
+            $table->foreign('delivery_address_id')->references('id')->on('delivery_addresses');
             $table->foreign('payment_id')->references('id')->on('payments')->onDelete('set null')->onUpdate('set null');
         });
     }
