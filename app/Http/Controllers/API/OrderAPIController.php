@@ -265,15 +265,13 @@ class OrderAPIController extends Controller
 
         try {
             $order = $this->orderRepository->update($input, $id);
-            if($request->input('employee_appointment_id') !== null) {
-                $order->employee_appointment_id = $request->input('employee_appointment_id');
-            }
+
             if (isset($input['order_status_id']) && $input['order_status_id'] == 5 && !empty($order)) {
                 $this->paymentRepository->update(['status' => 'Paid'], $order['payment_id']);
 
-                if ($request->input('employee_appointment_id') !== null) {
+                if ($request->input('hint') !== null) {
                     $table = DB::table('employee_appointments')
-                        ->where('id', $request->input('employee_appointment_id'))
+                        ->where('id', $request->input('hint'))
                         ->update(
                             [
                                 'user_id' => $order->user_id,
@@ -281,11 +279,9 @@ class OrderAPIController extends Controller
                             ]
                         );
                     $appointment = DB::table('employee_appointments')
-                        ->find($request->input('employee_appointment_id'));
-                    $order->employee_appointment_id = $request->input('employee_appointment_id');
+                        ->find($request->input('hint'));
+//                    $order->employee_appointment_id = $request->input('employee_appointment_id');
                     $order->employee_appointment_during = $appointment->start_date.' : '.$appointment->end_date;
-                    // $order->save();
-                    dd($order);
                     if ($table === 0) {
                         return $this->sendError('Цаг бүртгэхэд алдаа гарлааа');
                     }
