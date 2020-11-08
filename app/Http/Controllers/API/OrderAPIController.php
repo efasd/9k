@@ -265,6 +265,7 @@ class OrderAPIController extends Controller
 
         try {
             $order = $this->orderRepository->update($input, $id);
+            // dd($order->user_id);
             if (isset($input['order_status_id']) && $input['order_status_id'] == 5 && !empty($order)) {
                 $this->paymentRepository->update(['status' => 'Paid'], $order['payment_id']);
 
@@ -272,7 +273,7 @@ class OrderAPIController extends Controller
                     ->where('id', $request->input('hint'))
                     ->update(
                         [
-                            'user_id' => $request->input('userId'),
+                            'user_id' => $order->user_id,
                             'is_active' => 1
                         ]
                     );
