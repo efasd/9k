@@ -227,25 +227,29 @@ class UserAPIController extends Controller
         } else {
             return $this->sendError('Reset link not sent', 401);
         }
-
     }
 
-    function getDateFormat(Request $request) {
-        $appointment = DB::table('employee_appointments')
-            ->where('active_day', 'like', '%'.$request->input('date').'%')
-            ->where('is_active', '0')
-            ->get();
-
+    /*
+     * @Parameter "date" you want to use date (DATE)
+     * @Parameter "employeeId" employee Id  (INT)
+     * @Parameter "marketId" market id you should wanna take the salon or something like that (INT)
+     */
+    function getEmployeeAppointment(Request $request) {
         $market = DB::table('markets')
             ->find($request->input('marketId'));
 
         if ($market->start_date == null || $market->end_date == null) {
             return $this->sendResponse(false, 'Маркет дээр эхлэх болон дуусах хугацаа оруулаагүй байна');
         }
+
+        $appointment = DB::table('employee_appointments')
+            ->where('active_day', 'like', '%'.$request->input('date').'%')
+            ->where('is_active', '0')
+            ->get();
+
         if($appointment->count() > 0) {
             return $this->sendResponse(true, $appointment);
         } else {
-
             $startDate = date_time_set(date_create($request->input('date')), date('H', strtotime($market->start_date)), date('i', strtotime($market->start_date)));
             $endDate = date_time_set(date_create($request->input('date')), date('H', strtotime($market->end_date)), date('i', strtotime($market->end_date)));
             $betweenDates = [];
@@ -267,9 +271,8 @@ class UserAPIController extends Controller
             }
 
             $tableResult = [];
-
             foreach ($betweenDates as $betweenDate) {
-                $table = DB::table('employee_appointments')
+                $isInserted = DB::table('employee_appointments')
                     ->updateOrInsert(
                         ['employee_id' => $request->input('employeeId'), 'active_day' => $betweenDate['activeDate'], 'start_date' => $betweenDate['startTime']],
                         [
@@ -278,19 +281,34 @@ class UserAPIController extends Controller
                             'duration_date' => 90,
                             'employee_id' => $request->input('employeeId'),
                             'product_id' => 46,
-                            'active_day' => $betweenDate['activeDate']
+                            'active_day' => $betweenDate['activeDate'],
+                            'created_at' => date('Y-m-d H:i:s'),
                         ]
                     );
-                array_push($tableResult, $table);
+                if ($isInserted) {
+                    $getTime = $betweenDate['startTime']->format("H:i");
+                    $employeeAppointment = DB::table('employee_appointments')
+                        ->where([
+                            ['employee_id', '=', $request->input('employeeId')],
+                            ['active_day', '=', $betweenDate['activeDate']],
+                            ['start_date', 'like', '%'.$getTime.'%']
+                        ])->get();
+                    array_push($tableResult, $employeeAppointment->get(0));
+                }
             }
-            if(count($tableResult) > 0) {
+            if($tableResult !== 0) {
                 return $this->sendResponse(true, $tableResult);
             }
             return $this->sendResponse(false, 'Үүсгэж чадсангүй');
         }
     }
 
-    function setAppointment(Request $request) {
+    /*
+     * @Parameter "appointmentId" you chosen employee appointment
+     * @Parameter "userId" user who want to use id
+     * @Parameter "employeeId" chosen employee
+     */
+    function setEmployeeAppointment(Request $request) {
         $table = DB::table('employee_appointments')
             ->where('id', $request->input('appointmentId'))
             ->update(
@@ -300,25 +318,5 @@ class UserAPIController extends Controller
             return $this->sendResponse(false, 'Амжилттай бүртгэгдлээ');
         }
         return $this->sendResponse(false, 'Бүртгэгдсэн цаг байна');
-    }
-
-    function getAppointment($userId) {
-
-        $user = $this->userRepository->findWithoutFail($userId);
-
-        if (empty($user)) {
-            return $this->sendResponse([
-                'error' => true,
-                'code' => 404,
-            ], 'User not found');
-        }
-
-        $employeeAppointments = [];
-        $employeeAppointment = EmployeeAppointment::where('user_id', $user->id)->get();
-        foreach($employeeAppointment as $appointment) {
-            array_push($employeeAppointments, $appointment);
-        }
-        $user['appointments'] = $employeeAppointments;
-        return $user;
     }
 }

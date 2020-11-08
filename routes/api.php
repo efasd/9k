@@ -60,8 +60,8 @@ Route::prefix('product')->group(function () {
 
 Route::prefix('employee')->group(function () {
     Route::get('appointment/{userId}', 'API\UserAPIController@getAppointment');
-    Route::post('appointment/getAppointment', 'API\UserAPIController@getDateFormat');
-    Route::post('appointment/setAppointment', 'API\UserAPIController@setAppointment');
+    Route::post('appointment/getAppointment', 'API\UserAPIController@getEmployeeAppointment');
+    Route::post('appointment/setAppointment', 'API\UserAPIController@setEmployeeAppointment');
 });
 
 
@@ -75,8 +75,6 @@ Route::resource('slides', 'API\SlideAPIController')->except([
 Route::resource('option_groups', 'API\OptionGroupAPIController');
 
 Route::resource('options', 'API\OptionAPIController');
-
-
 
 Route::middleware('auth:api')->group(function () {
     Route::group(['middleware' => ['role:driver']], function () {
