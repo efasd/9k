@@ -245,6 +245,7 @@ class UserAPIController extends Controller
         $appointment = DB::table('employee_appointments')
             ->where('active_day', 'like', '%'.$request->input('date').'%')
             ->where('is_active', '0')
+            ->where('employee_id', $request->input('employeeId'))
             ->get();
 
         if($appointment->count() > 0) {
