@@ -265,21 +265,22 @@ class OrderAPIController extends Controller
 
         try {
             $order = $this->orderRepository->update($input, $id);
-            // dd($order->user_id);
             if (isset($input['order_status_id']) && $input['order_status_id'] == 5 && !empty($order)) {
                 $this->paymentRepository->update(['status' => 'Paid'], $order['payment_id']);
 
-                $table = DB::table('employee_appointments')
-                    ->where('id', $request->input('hint'))
-                    ->update(
-                        [
-                            'user_id' => $order->user_id,
-                            'is_active' => 1
-                        ]
-                    );
+                if ($request->input('hint') !== null) {
+                    $table = DB::table('employee_appointments')
+                        ->where('id', $request->input('hint'))
+                        ->update(
+                            [
+                                'user_id' => $order->user_id,
+                                'is_active' => 1
+                            ]
+                        );
 
-                if ($table === 0) {
-                    return $this->sendError('Цаг бүртгэхэд алдаа гарлааа');
+                    if ($table === 0) {
+                        return $this->sendError('Цаг бүртгэхэд алдаа гарлааа');
+                    }
                 }
             }
             event(new OrderChangedEvent($oldStatus, $order));
