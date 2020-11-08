@@ -237,8 +237,7 @@ class UserAPIController extends Controller
     function getEmployeeAppointment(Request $request) {
         $market = DB::table('markets')
             ->find($request->input('marketId'));
-
-        if ($market->start_date == null || $market->end_date == null) {
+        if ($market->start_date == null || $market->end_date == null || $market->duration_range == null) {
             return $this->sendResponse(false, 'Маркет дээр эхлэх болон дуусах хугацаа оруулаагүй байна');
         }
 
@@ -256,7 +255,7 @@ class UserAPIController extends Controller
             $betweenDates = [];
             while($startDate < $endDate) {
                 $dates = array();
-                $nextHourMinute = date('H:i', strtotime($startDate->format('H:i')) + 90 * 60);
+                $nextHourMinute = date('H:i', strtotime($startDate->format('H:i')) + $market->duration_range * 60);
 
                 $activeDay = new DateTime(date_create($request->input('date'))->format('Y-m-d H:i:s'));
 
@@ -279,7 +278,7 @@ class UserAPIController extends Controller
                         [
                             'start_date' => $betweenDate['startTime'],
                             'end_date' => $betweenDate['endDate'],
-                            'duration_date' => 90,
+                            'duration_date' => $market->duration_range,
                             'employee_id' => $request->input('employeeId'),
                             'product_id' => $request->input('productId'),
                             'active_day' => $betweenDate['activeDate'],

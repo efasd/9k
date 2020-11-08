@@ -41,6 +41,11 @@ class CreateMarketsTable extends Migration
             $table->boolean('active')->nullable()->default(0); // //added
             $table->boolean('available_for_delivery')->nullable()->default(1); //added
             $table->timestamps();
+
+            $table->string('balance_name');
+            $table->string('balance_number');
+            $table->string('name_of_bank');
+            $table->string('balance_min_value');
         });
     }
 

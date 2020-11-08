@@ -278,10 +278,18 @@ class OrderAPIController extends Controller
                                 'is_active' => 1
                             ]
                         );
-                    $appointment = DB::table('employee_appointments')
-                        ->find($request->input('hint'));
-//                    $order->employee_appointment_id = $request->input('employee_appointment_id');
-                    $order->employee_appointment_during = $appointment->start_date.' : '.$appointment->end_date;
+                    $appointment = DB::table('employee_appointments')->find($request->input('hint'));
+                    $order->employee_appointment_during = $appointment->active_day.' | '.$appointment->start_date;
+
+                    if($request->input('market_id')) {
+                        $market = DB::table('markets')->find($request->input('market_id'));
+                        if ($market) {
+                            $order->balance_name = $market->balance_name;
+                            $order->balance_number = $market->balance_number;
+                            $order->name_of_bank = $market->name_of_bank;
+                            $order->balance_min_value = $market->balance_min_value;
+                        }
+                    }
                     if ($table === 0) {
                         return $this->sendError('Цаг бүртгэхэд алдаа гарлааа');
                     }
