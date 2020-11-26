@@ -229,6 +229,22 @@ class UserAPIController extends Controller
         }
     }
 
+    function getEmployees($id) {
+
+        $user = $this->userRepository->findWithoutFail($id);
+        $user = DB::table('users')
+            ->where('id', '=', $id)
+            ->where('id', '=', $id)
+            ->get();
+
+        if (empty($user)) {
+            return $this->sendResponse([
+                'error' => true,
+                'code' => 404,
+            ], 'User not found');
+        }
+        return $this->sendResponse(true, $user);
+    }
     /*
      * @Parameter "date" you want to use date (DATE)
      * @Parameter "employeeId" employee Id  (INT)

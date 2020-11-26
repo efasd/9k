@@ -29,13 +29,13 @@ use Eloquent as Model;
  * @property string id
  * @property int delivery_address_id
  * @property string hint
+ * @property int employee_appointment_id
+ * @property string employee_appointment_during
  */
 class Order extends Model
 {
 
     public $table = 'orders';
-    
-
 
     public $fillable = [
         'user_id',
@@ -46,7 +46,9 @@ class Order extends Model
         'delivery_address_id',
         'delivery_fee',
         'active',
-        'driver_id'
+        'driver_id',
+        'employee_appointment_id',
+        'employee_appointment_during'
     ];
 
     /**
@@ -65,6 +67,8 @@ class Order extends Model
         'delivery_fee'=>'double',
         'active'=>'boolean',
         'driver_id' => 'integer',
+        'employee_appointment_id' => 'integer',
+        'employee_appointment_during'=> 'string'
     ];
 
     /**

@@ -59,7 +59,7 @@ Route::prefix('product')->group(function () {
 });
 
 Route::prefix('employee')->group(function () {
-    Route::get('appointment/{userId}', 'API\UserAPIController@getAppointment');
+    Route::get('appointment/{userId}', 'API\UserAPIController@getEmployees');
     Route::post('appointment/getAppointment', 'API\UserAPIController@getEmployeeAppointment');
     Route::post('appointment/setAppointment', 'API\UserAPIController@setEmployeeAppointment');
 });
@@ -103,7 +103,6 @@ Route::middleware('auth:api')->group(function () {
 
     Route::get('favorites/exist', 'API\FavoriteAPIController@exist');
     Route::resource('favorites', 'API\FavoriteAPIController');
-
     Route::resource('orders', 'API\OrderAPIController');
 
     Route::resource('product_orders', 'API\ProductOrderAPIController');
