@@ -282,8 +282,8 @@ class OrderAPIController extends Controller
                                 'is_active' => 1
                             ]
                         );
-                    $appointment = DB::table('employee_appointments')->find($request->input('hint'));
-                    $order->employee_appointment_during = $appointment->active_day.' | '.$appointment->start_date;
+                    // $appointment = DB::table('employee_appointments')->find($request->input('hint'));
+                    // $order->employee_appointment_during = $appointment->active_day.' | '.$appointment->start_date;
 
                     if($request->input('market_id')) {
                         $market = DB::table('markets')->find($request->input('market_id'));
