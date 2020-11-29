@@ -32,7 +32,7 @@ class CreateOrdersTable extends Migration
             $table->integer('delivery_address_id')->nullable()->unsigned();
             $table->integer('payment_id')->nullable()->unsigned();
             $table->integer('employee_appointment_id')->nullable();
-            $table->integer('employee_appointment_during')->nullable();
+            $table->string('employee_appointment_during')->nullable();
             $table->timestamps();
             $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade')->onUpdate('cascade');
             $table->foreign('order_status_id')->references('id')->on('order_statuses')->onDelete('cascade')->onUpdate('cascade');

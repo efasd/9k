@@ -134,6 +134,7 @@ class OrderAPIController extends Controller
      */
     public function store(Request $request)
     {
+        // dd("request +", $request);
         $payment = $request->only('payment');
         if (isset($payment['payment']) && $payment['payment']['method']) {
             if ($payment['payment']['method'] == "Credit Card (Stripe Gateway)") {
@@ -167,14 +168,15 @@ class OrderAPIController extends Controller
                     "name" => $user->name,
                 )
             ));
+            dd($stripeToken);
             if ($stripeToken->created > 0) {
                 if (empty($input['delivery_address_id'])) {
                     $order = $this->orderRepository->create(
-                        $request->only('user_id', 'order_status_id', 'tax', 'hint')
+                        $request->only('user_id', 'order_status_id', 'tax', 'hint', 'employee_appointment_during')
                     );
                 } else {
                     $order = $this->orderRepository->create(
-                        $request->only('user_id', 'order_status_id', 'tax', 'delivery_address_id', 'delivery_fee', 'hint')
+                        $request->only('user_id', 'order_status_id', 'tax', 'delivery_address_id', 'delivery_fee', 'hint', 'employee_appointment_during')
                     );
                 }
                 foreach ($input['products'] as $productOrder) {
@@ -214,30 +216,32 @@ class OrderAPIController extends Controller
         $input = $request->all();
         $amount = 0;
         try {
-            $order = $this->orderRepository->create(
-                $request->only('user_id', 'order_status_id', 'tax', 'delivery_address_id', 'delivery_fee', 'hint')
-            );
-            Log::info($input['products']);
-            foreach ($input['products'] as $productOrder) {
-                $productOrder['order_id'] = $order->id;
-                $amount += $productOrder['price'] * $productOrder['quantity'];
-                $this->productOrderRepository->create($productOrder);
+            if ($request->input('delivery_address_id')) {
+                $order = $this->orderRepository->create(
+                    $request->only('user_id', 'order_status_id', 'tax', 'delivery_address_id', 'delivery_fee', 'hint', 'employee_appointment_during')
+                );
+                Log::info($input['products']);
+                foreach ($input['products'] as $productOrder) {
+                    $productOrder['order_id'] = $order->id;
+                    $amount += $productOrder['price'] * $productOrder['quantity'];
+                    $this->productOrderRepository->create($productOrder);
+                }
+                $amount += $order->delivery_fee;
+                $amountWithTax = $amount + ($amount * $order->tax / 100);
+                $payment = $this->paymentRepository->create([
+                    "user_id" => $input['user_id'],
+                    "description" => trans("lang.payment_order_waiting"),
+                    "price" => $amountWithTax,
+                    "status" => 'Waiting for Client',
+                    "method" => $input['payment']['method'],
+                ]);
+
+                $this->orderRepository->update(['payment_id' => $payment->id], $order->id);
+
+                $this->cartRepository->deleteWhere(['user_id' => $order->user_id]);
+
+                Notification::send($order->productOrders[0]->product->market->users, new NewOrder($order));
             }
-            $amount += $order->delivery_fee;
-            $amountWithTax = $amount + ($amount * $order->tax / 100);
-            $payment = $this->paymentRepository->create([
-                "user_id" => $input['user_id'],
-                "description" => trans("lang.payment_order_waiting"),
-                "price" => $amountWithTax,
-                "status" => 'Waiting for Client',
-                "method" => $input['payment']['method'],
-            ]);
-
-            $this->orderRepository->update(['payment_id' => $payment->id], $order->id);
-
-            $this->cartRepository->deleteWhere(['user_id' => $order->user_id]);
-
-            Notification::send($order->productOrders[0]->product->market->users, new NewOrder($order));
 
         } catch (ValidatorException $e) {
             return $this->sendError($e->getMessage());
@@ -278,8 +282,8 @@ class OrderAPIController extends Controller
                                 'is_active' => 1
                             ]
                         );
-                    $appointment = DB::table('employee_appointments')->find($request->input('hint'));
-                    $order->employee_appointment_during = $appointment->active_day.' | '.$appointment->start_date;
+                    // $appointment = DB::table('employee_appointments')->find($request->input('hint'));
+                    // $order->employee_appointment_during = $appointment->active_day.' | '.$appointment->start_date;
 
                     if($request->input('market_id')) {
                         $market = DB::table('markets')->find($request->input('market_id'));
@@ -311,7 +315,7 @@ class OrderAPIController extends Controller
             }
 
         } catch (ValidatorException $e) {
-            return $this->sendError($e->getMessage());
+            return $this->sendError('Exception: '.$e->getMessage());
         }
 
         return $this->sendResponse($order->toArray(), __('lang.saved_successfully', ['operator' => __('lang.order')]));
