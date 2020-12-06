@@ -312,6 +312,15 @@ class UserAPIController extends Controller
                     array_push($tableResult, $employeeAppointment->get(0));
                 }
             }
+            $alreadyFinished = true;
+            forEach($tableResult as $res) {
+                if ($res->is_active === 1) {
+                    $alreadyFinished = false;
+                }
+            }
+            if (!$alreadyFinished) {
+                return $this->sendResponse(true, 'цаг дууссан байна');
+            }
             if($tableResult !== 0) {
                 return $this->sendResponse(true, $tableResult);
             }
@@ -329,7 +338,11 @@ class UserAPIController extends Controller
         $table = DB::table('employee_appointments')
             ->where('id', $request->input('appointmentId'))
             ->update(
-                ['user_id' => $request->input('userId'), 'product_id' => $request->input('productId'), 'is_active' => 1]
+                [
+                    'user_id' => $request->input('userId'),
+                    'product_id' => $request->input('productId'),
+                    'is_active' => 1
+                ]
             );
         if($table > 0) {
             return $this->sendResponse(false, 'Амжилттай бүртгэгдлээ');
