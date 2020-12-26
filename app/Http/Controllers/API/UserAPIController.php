@@ -324,6 +324,15 @@ class UserAPIController extends Controller
                     array_push($tableResult, $employeeAppointment->get(0));
                 }
             }
+            $alreadyFinished = true;
+            forEach($tableResult as $res) {
+                if ($res->is_active === 1) {
+                    $alreadyFinished = false;
+                }
+            }
+            if (!$alreadyFinished) {
+                return $this->sendResponse(true, 'цаг дууссан байна');
+            }
             if($tableResult !== 0) {
                 return $this->sendResponse(true, $tableResult);
             }
