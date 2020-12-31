@@ -25,6 +25,7 @@ use App\Repositories\PaymentRepository;
 use App\Repositories\ProductOrderRepository;
 use App\Repositories\UserRepository;
 use Flash;
+use GuzzleHttp\Client;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
@@ -34,6 +35,8 @@ use Prettus\Repository\Exceptions\RepositoryException;
 use Prettus\Validator\Exceptions\ValidatorException;
 use Stripe\Token;
 use DB;
+
+session_start();
 
 /**
  * Class OrderController
@@ -134,14 +137,80 @@ class OrderAPIController extends Controller
      */
     public function store(Request $request)
     {
-        // dd("request +", $request);
         $payment = $request->only('payment');
         if (isset($payment['payment']) && $payment['payment']['method']) {
             if ($payment['payment']['method'] == "Credit Card (Stripe Gateway)") {
                 return $this->stripPayment($request);
             } else {
-                return $this->cashPayment($request);
 
+                $response = $this->cashPayment($request);
+
+                // dd($response->getData()->data, $response->getData()->data->product_orders[0]->product->market->id);
+
+                $order = DB::table('product_orders')
+                    ->where('order_id', $response->getData()->data->id)
+                    ->get();
+
+                if ($order->count() === 0) {
+                    return $this->sendError('Захилга олдсонгүй');
+                }
+
+                $totalAmount = 0.0;
+                for($i=0; $i < $order->count(); $i++) {
+                    $totalAmount += $order[$i]->price;
+                }
+
+                $market = DB::table('markets')
+                    ->find($response->getData()->data->product_orders[0]->product->market->id);
+
+                if(!$market) {
+                    return $this->sendError('Салбарын мэдээлэл байхгүй байна');
+                }
+
+                $line = array (
+                    "line_description" => "Invoice description",
+                    "line_quantity" => "1.00",
+                    "line_unit_price" => $totalAmount,
+                    "discounts" => [],
+                    "surcharges" => [],
+                    "taxes" => []
+                );
+
+                $test = (object) array();
+                $reData = array(
+                    "invoice_code" => "TEST_INVOICE",
+                    "sender_invoice_no" => "9329873948",
+                    "sender_branch_code" => $market->id.'',
+                    "invoice_receiver_code" => "terminal",
+                    "invoice_receiver_data" => $test,
+                    "invoice_description" => "Invoice description",
+                    "lines" => []
+                );
+                $reData['lines'][0] = $line;
+
+                $client = new Client();
+                $request = $client->request(
+                    'POST',
+                    env('PAYMENT_IP') . '/v2/invoice',
+                    [
+                        'headers' => [
+                            'Authorization' => 'Bearer ' . $_SESSION['qpay_access_token'],
+                            'Content-Type' => 'application/json'
+                        ],
+                        'body' => json_encode($reData)
+                    ]
+                );
+
+
+                if ($request->getStatusCode() === 200) {
+                    $res = json_decode($request->getBody());
+
+                    $reData = [];
+                    array_push($reData, $response);
+                    array_push($reData, $res);
+                    return $this->sendResponse($reData, __('lang.saved_successfully', ['operator' => __('lang.order')]));
+                }
+                return $this->sendError('Зарлагын хүсэлт үүсгэж чадсангүй', 500);
             }
         }
     }
@@ -216,37 +285,34 @@ class OrderAPIController extends Controller
         $input = $request->all();
         $amount = 0;
         try {
-            if ($request->input('delivery_address_id')) {
-                $order = $this->orderRepository->create(
-                    $request->only('user_id', 'order_status_id', 'tax', 'delivery_address_id', 'delivery_fee', 'hint', 'employee_appointment_during')
-                );
-                Log::info($input['products']);
-                foreach ($input['products'] as $productOrder) {
-                    $productOrder['order_id'] = $order->id;
-                    $amount += $productOrder['price'] * $productOrder['quantity'];
-                    $this->productOrderRepository->create($productOrder);
-                }
-                $amount += $order->delivery_fee;
-                $amountWithTax = $amount + ($amount * $order->tax / 100);
-                $payment = $this->paymentRepository->create([
-                    "user_id" => $input['user_id'],
-                    "description" => trans("lang.payment_order_waiting"),
-                    "price" => $amountWithTax,
-                    "status" => 'Waiting for Client',
-                    "method" => $input['payment']['method'],
-                ]);
-
-                $this->orderRepository->update(['payment_id' => $payment->id], $order->id);
-
-                $this->cartRepository->deleteWhere(['user_id' => $order->user_id]);
-
-                Notification::send($order->productOrders[0]->product->market->users, new NewOrder($order));
+            $order = $this->orderRepository->create(
+                $request->only('user_id', 'order_status_id', 'tax', 'delivery_address_id', 'delivery_fee', 'hint', 'employee_appointment_during')
+            );
+            Log::info($input['products']);
+            foreach ($input['products'] as $productOrder) {
+                $productOrder['order_id'] = $order->id;
+                $amount += $productOrder['price'] * $productOrder['quantity'];
+                $this->productOrderRepository->create($productOrder);
             }
+            $amount += $order->delivery_fee;
+            $amountWithTax = $amount + ($amount * $order->tax / 100);
+            $payment = $this->paymentRepository->create([
+                "user_id" => $input['user_id'],
+                "description" => trans("lang.payment_order_waiting"),
+                "price" => $amountWithTax,
+                "status" => 'Waiting for Client',
+                "method" => $input['payment']['method'],
+            ]);
+
+            $this->orderRepository->update(['payment_id' => $payment->id], $order->id);
+
+            $this->cartRepository->deleteWhere(['user_id' => $order->user_id]);
+
+            Notification::send($order->productOrders[0]->product->market->users, new NewOrder($order));
 
         } catch (ValidatorException $e) {
             return $this->sendError($e->getMessage());
         }
-
         return $this->sendResponse($order->toArray(), __('lang.saved_successfully', ['operator' => __('lang.order')]));
     }
 
