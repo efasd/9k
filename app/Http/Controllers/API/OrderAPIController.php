@@ -145,8 +145,6 @@ class OrderAPIController extends Controller
 
                 $response = $this->cashPayment($request);
 
-                // dd($response->getData()->data, $response->getData()->data->product_orders[0]->product->market->id);
-
                 $order = DB::table('product_orders')
                     ->where('order_id', $response->getData()->data->id)
                     ->get();
