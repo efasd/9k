@@ -59,11 +59,30 @@ Route::prefix('product')->group(function () {
 });
 
 Route::prefix('employee')->group(function () {
-    Route::get('appointment/{userId}', 'API\UserAPIController@getAppointment');
+    Route::get('appointment/{userId}', 'API\UserAPIController@getEmployees');
     Route::post('appointment/getAppointment', 'API\UserAPIController@getEmployeeAppointment');
     Route::post('appointment/setAppointment', 'API\UserAPIController@setEmployeeAppointment');
 });
 
+Route::prefix('payment')->group(function () {
+   Route::prefix('auth')->group(function() {
+       Route::post('token', 'API\payment\auth\PaymentAuthAPIController@token');
+       Route::post('refresh', 'API\payment\auth\PaymentAuthAPIController@refresh');
+   });
+   Route::prefix('invoice')->group(function() {
+       Route::post('create', 'API\payment\invoice\PaymentAPIInvoiceController@create');
+       Route::post('create-simple', 'API\payment\invoice\PaymentAPIInvoiceController@createSimple');
+       Route::get('get/{invoiceId}', 'API\payment\invoice\PaymentAPIInvoiceController@get');
+       Route::delete('cancel/{invoiceId}', 'API\payment\invoice\PaymentAPIInvoiceController@cancel');
+   });
+   Route::prefix('payment')->group(function() {
+       Route::get('get/{invoiceId}', 'API\payment\payment\PaymentAPIController@get');
+       Route::get('check/{invoiceId}', 'API\payment\payment\PaymentAPIController@check');
+       Route::delete('cancel', 'API\payment\payment\PaymentAPIController@cancel');
+       Route::delete('refund', 'API\payment\payment\PaymentAPIController@refund');
+       Route::post('list', 'API\payment\payment\PaymentAPIController@list');
+   });
+});
 
 Route::resource('faqs', 'API\FaqAPIController');
 Route::resource('market_reviews', 'API\MarketReviewAPIController');
@@ -103,7 +122,6 @@ Route::middleware('auth:api')->group(function () {
 
     Route::get('favorites/exist', 'API\FavoriteAPIController@exist');
     Route::resource('favorites', 'API\FavoriteAPIController');
-
     Route::resource('orders', 'API\OrderAPIController');
 
     Route::resource('product_orders', 'API\ProductOrderAPIController');

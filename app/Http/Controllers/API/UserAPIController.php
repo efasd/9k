@@ -99,7 +99,6 @@ class UserAPIController extends Controller
             return $this->sendError($e->getMessage(), 401);
         }
 
-
         return $this->sendResponse($user, 'User retrieved successfully');
     }
 
@@ -229,16 +228,45 @@ class UserAPIController extends Controller
         }
     }
 
-    /*
-     * @Parameter "date" you want to use date (DATE)
-     * @Parameter "employeeId" employee Id  (INT)
-     * @Parameter "marketId" market id you should wanna take the salon or something like that (INT)
+    function getEmployees($id) {
+
+        $user = $this->userRepository->findWithoutFail($id);
+        $user = DB::table('users')
+            ->where('id', '=', $id)
+            ->where('id', '=', $id)
+            ->get();
+
+        if (empty($user)) {
+            return $this->sendResponse([
+                'error' => true,
+                'code' => 404,
+            ], 'User not found');
+        }
+        return $this->sendResponse(true, $user);
+    }
+
+    /**
+     * getEmployeeAppointment
+     * @param Timestamp $date you want to use date (DATE)
+     * @param int $employeeId employee Id  (INT)
+     * @param int $marketId market id you should wanna take the salon or something like that (INT)
+     * @return time-schedule
+     * @throws \Exception
      */
     function getEmployeeAppointment(Request $request) {
         $market = DB::table('markets')
             ->find($request->input('marketId'));
         if ($market->start_date == null || $market->end_date == null || $market->duration_range == null) {
             return $this->sendResponse(false, 'Маркет дээр эхлэх болон дуусах хугацаа оруулаагүй байна');
+        }
+
+        $employeeCheck = DB::table('employee_markets')
+            ->where('user_id', $request->input('employeeId'))
+            ->where('market_id', $request->input('marketId'))
+            ->get();
+
+        if($employeeCheck->count() === 0) {
+            return $this->sendError('Ажилтан салбар дээр бүртгэлгүй байна', 500);
         }
 
         $appointment = DB::table('employee_appointments')
@@ -296,6 +324,15 @@ class UserAPIController extends Controller
                     array_push($tableResult, $employeeAppointment->get(0));
                 }
             }
+            $alreadyFinished = true;
+            forEach($tableResult as $res) {
+                if ($res->is_active === 1) {
+                    $alreadyFinished = false;
+                }
+            }
+            if (!$alreadyFinished) {
+                return $this->sendResponse(true, 'цаг дууссан байна');
+            }
             if($tableResult !== 0) {
                 return $this->sendResponse(true, $tableResult);
             }
@@ -303,20 +340,43 @@ class UserAPIController extends Controller
         }
     }
 
-    /*
+    /**
      * @Parameter "appointmentId" you chosen employee appointment   
      * @Parameter "userId" user who want to use id
      * @Parameter "employeeId" chosen employee
      * @Parameter "productId" chosen product
      */
     function setEmployeeAppointment(Request $request) {
+        $user = DB::table('users')->where('id', $request->input('userId'))->get();
+        if ($user->count() === 0) {
+            return $this->sendError('Хэрэглэгчийн мэдээлэл буруу байна', 500);
+        }
+
+        $products = DB::table('products')->where('id', $request->input('productId'))->get();
+        if ($products->count() === 0) {
+            return $this->sendError('Бүтээгдэхүүний мэдээлэл буруу байна', 500);
+        }
+
+        $employeeAppointments = DB::table('employee_appointments')
+            ->where('id', $request->input('appointmentId'))
+            ->where('employee_id', $request->input('employeeId'))
+            ->get();
+        if ($employeeAppointments->count() === 0) {
+            return $this->sendError('Ажилтан цагийн бүртгэл таарахгүй байна', 500);
+        }
+
         $table = DB::table('employee_appointments')
             ->where('id', $request->input('appointmentId'))
+            ->where('employee_id', $request->input('employeeId'))
             ->update(
-                ['user_id' => $request->input('userId'), 'product_id' => $request->input('productId'), 'is_active' => 1]
+                [
+                    'user_id' => $request->input('userId'),
+                    'product_id' => $request->input('productId'),
+                    'is_active' => 1
+                ]
             );
         if($table > 0) {
-            return $this->sendResponse(false, 'Амжилттай бүртгэгдлээ');
+            return $this->sendResponse(true, 'Амжилттай бүртгэгдлээ');
         }
         return $this->sendResponse(false, 'Бүртгэгдсэн цаг байна');
     }

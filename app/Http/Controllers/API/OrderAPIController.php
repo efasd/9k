@@ -25,6 +25,7 @@ use App\Repositories\PaymentRepository;
 use App\Repositories\ProductOrderRepository;
 use App\Repositories\UserRepository;
 use Flash;
+use GuzzleHttp\Client;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
@@ -34,6 +35,8 @@ use Prettus\Repository\Exceptions\RepositoryException;
 use Prettus\Validator\Exceptions\ValidatorException;
 use Stripe\Token;
 use DB;
+
+session_start();
 
 /**
  * Class OrderController
@@ -139,8 +142,75 @@ class OrderAPIController extends Controller
             if ($payment['payment']['method'] == "Credit Card (Stripe Gateway)") {
                 return $this->stripPayment($request);
             } else {
-                return $this->cashPayment($request);
 
+                $response = $this->cashPayment($request);
+
+                // dd($response->getData()->data, $response->getData()->data->product_orders[0]->product->market->id);
+
+                $order = DB::table('product_orders')
+                    ->where('order_id', $response->getData()->data->id)
+                    ->get();
+
+                if ($order->count() === 0) {
+                    return $this->sendError('Захилга олдсонгүй');
+                }
+
+                $totalAmount = 0.0;
+                for($i=0; $i < $order->count(); $i++) {
+                    $totalAmount += $order[$i]->price;
+                }
+
+                $market = DB::table('markets')
+                    ->find($response->getData()->data->product_orders[0]->product->market->id);
+
+                if(!$market) {
+                    return $this->sendError('Салбарын мэдээлэл байхгүй байна');
+                }
+
+                $line = array (
+                    "line_description" => "Invoice description",
+                    "line_quantity" => "1.00",
+                    "line_unit_price" => $totalAmount,
+                    "discounts" => [],
+                    "surcharges" => [],
+                    "taxes" => []
+                );
+
+                $test = (object) array();
+                $reData = array(
+                    "invoice_code" => "TEST_INVOICE",
+                    "sender_invoice_no" => "9329873948",
+                    "sender_branch_code" => $market->id.'',
+                    "invoice_receiver_code" => "terminal",
+                    "invoice_receiver_data" => $test,
+                    "invoice_description" => "Invoice description",
+                    "lines" => []
+                );
+                $reData['lines'][0] = $line;
+
+                $client = new Client();
+                $request = $client->request(
+                    'POST',
+                    env('PAYMENT_IP') . '/v2/invoice',
+                    [
+                        'headers' => [
+                            'Authorization' => 'Bearer ' . $_SESSION['qpay_access_token'],
+                            'Content-Type' => 'application/json'
+                        ],
+                        'body' => json_encode($reData)
+                    ]
+                );
+
+
+                if ($request->getStatusCode() === 200) {
+                    $res = json_decode($request->getBody());
+
+                    $reData = [];
+                    array_push($reData, $response);
+                    array_push($reData, $res);
+                    return $this->sendResponse($reData, __('lang.saved_successfully', ['operator' => __('lang.order')]));
+                }
+                return $this->sendError('Зарлагын хүсэлт үүсгэж чадсангүй', 500);
             }
         }
     }
@@ -167,14 +237,15 @@ class OrderAPIController extends Controller
                     "name" => $user->name,
                 )
             ));
+            dd($stripeToken);
             if ($stripeToken->created > 0) {
                 if (empty($input['delivery_address_id'])) {
                     $order = $this->orderRepository->create(
-                        $request->only('user_id', 'order_status_id', 'tax', 'hint')
+                        $request->only('user_id', 'order_status_id', 'tax', 'hint', 'employee_appointment_during')
                     );
                 } else {
                     $order = $this->orderRepository->create(
-                        $request->only('user_id', 'order_status_id', 'tax', 'delivery_address_id', 'delivery_fee', 'hint')
+                        $request->only('user_id', 'order_status_id', 'tax', 'delivery_address_id', 'delivery_fee', 'hint', 'employee_appointment_during')
                     );
                 }
                 foreach ($input['products'] as $productOrder) {
@@ -215,7 +286,7 @@ class OrderAPIController extends Controller
         $amount = 0;
         try {
             $order = $this->orderRepository->create(
-                $request->only('user_id', 'order_status_id', 'tax', 'delivery_address_id', 'delivery_fee', 'hint')
+                $request->only('user_id', 'order_status_id', 'tax', 'delivery_address_id', 'delivery_fee', 'hint', 'employee_appointment_during')
             );
             Log::info($input['products']);
             foreach ($input['products'] as $productOrder) {
@@ -242,7 +313,6 @@ class OrderAPIController extends Controller
         } catch (ValidatorException $e) {
             return $this->sendError($e->getMessage());
         }
-
         return $this->sendResponse($order->toArray(), __('lang.saved_successfully', ['operator' => __('lang.order')]));
     }
 
@@ -278,8 +348,8 @@ class OrderAPIController extends Controller
                                 'is_active' => 1
                             ]
                         );
-                    $appointment = DB::table('employee_appointments')->find($request->input('hint'));
-                    $order->employee_appointment_during = $appointment->active_day.' | '.$appointment->start_date;
+                    // $appointment = DB::table('employee_appointments')->find($request->input('hint'));
+                    // $order->employee_appointment_during = $appointment->active_day.' | '.$appointment->start_date;
 
                     if($request->input('market_id')) {
                         $market = DB::table('markets')->find($request->input('market_id'));
@@ -311,7 +381,7 @@ class OrderAPIController extends Controller
             }
 
         } catch (ValidatorException $e) {
-            return $this->sendError($e->getMessage());
+            return $this->sendError('Exception: '.$e->getMessage());
         }
 
         return $this->sendResponse($order->toArray(), __('lang.saved_successfully', ['operator' => __('lang.order')]));
