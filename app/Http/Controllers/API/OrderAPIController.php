@@ -25,6 +25,7 @@ use App\Repositories\OrderRepository;
 use App\Repositories\PaymentRepository;
 use App\Repositories\ProductOrderRepository;
 use App\Repositories\UserRepository;
+use DateTime;
 use Flash;
 use GuzzleHttp\Client;
 use http\Exception;
@@ -178,7 +179,7 @@ class OrderAPIController extends Controller
                 }
 
                 $line = array (
-                    "line_description" => "Invoice description",
+                    "line_description" => $response->getData()->data->id . '',
                     "line_quantity" => "1.00",
                     "line_unit_price" => $totalAmount,
                     "discounts" => [],
@@ -200,7 +201,6 @@ class OrderAPIController extends Controller
             }
             try {
 
-//                dd(env('PAYMENT_IP'), $_SESSION['qpay_access_token'], $reData);
                 $client = new Client();
                 $request = $client->request(
                     'POST',
@@ -215,18 +215,72 @@ class OrderAPIController extends Controller
                 );
 
                 if ($request->getStatusCode() === 200) {
-                    $res = json_decode($request->getBody());
+                    $invoiceRes = json_decode($request->getBody());
+                    $insertInvoice = DB::table('invoice')
+                        ->updateOrInsert(
+                            [
+                                'user_id' => $response->getData()->data->user->id,
+                                'order_id' => $response->getData()->data->id
+                            ],
+                            [
+                                'user_id' => $response->getData()->data->user->id,
+                                'order_id' => $response->getData()->data->id,
+                                'active' => true,
+                                'accepted' => false,
+                                'invoice_id' => $invoiceRes->invoice_id,
+                                'qr_text' => $invoiceRes->qr_text,
+                                'start_date' => new DateTime('NOW')
+                            ]
+                        );
+                    array_push($response->original['data']['custom_fields'],  $invoiceRes->urls);
 
-                    $reData = [];
-                    array_push($reData, $response);
-                    array_push($reData, $res);
                     return $this->sendResponse($reData, __('lang.saved_successfully', ['operator' => __('lang.order')]));
                 }
                 return $this->sendError('Зарлагын хүсэлт үүсгэж чадсангүй', 500);
-            }
-            catch (RequestException $e) {
-                dd('OrderAPIController : ',$e , $e->getMessage());
+            } catch (RequestException $e) {
                 return $this->sendError($e->getMessage(), 500);
+            }
+        }
+    }
+
+    private function getOrderListener() {
+        $now = new DateTime('NOW');
+        $now->modify('+5 minute');
+        $invoiceNotAccepted = DB::table('invoice')
+            ->where('active', true)
+            ->where('accepted', false)
+            ->where('start_date', '<' ,$now)
+            ->get();
+
+        foreach ($invoiceNotAccepted as $invoice) {
+            $offset = array (
+                "page_number" => 1,
+                "page_limit" => 100
+            );
+            $reData = array(
+                "object_type" => "INVOICE",
+                "object_id" => $invoice->invoice_id,
+                "offset" => []
+            );
+            $reData['offset'] = $offset;
+
+            $client = new Client();
+            $request = $client->request(
+                'POST',
+                env('PAYMENT_IP') . '/v2/payment/check',
+                [
+                    'headers' => [
+                        'Authorization' => 'Bearer ' . $_SESSION['qpay_access_token'],
+                        'Content-Type' => 'application/json'
+                    ],
+                    'body' => json_encode($reData)
+                ]
+            );
+            if ($request->getStatusCode() === 200) {
+                $response = json_decode($request->getBody());
+                dd($request->getBody(), $response);
+
+                return $this->sendResponse($response, 200);
             }
         }
     }
