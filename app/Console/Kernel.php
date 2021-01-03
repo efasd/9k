@@ -27,7 +27,7 @@ class Kernel extends ConsoleKernel
         // $schedule->command('inspire')
         //          ->hourly();
 
-        $schedule->call('App\Http\Controllers\API\OrderAPIController@getOrderListener')->everyMinute();
+//        $schedule->call('App\Http\Controllers\API\OrderAPIController@getOrderListener')->everyMinute();
     }
 
     /**
