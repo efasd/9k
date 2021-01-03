@@ -1,6 +1,7 @@
 <?php
 namespace App\Http\Controllers\API\payment\payment;
 
+use App\Http\Controllers\API\payment\auth\PaymentAuthAPIController;
 use App\Http\Controllers\Controller;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\ClientException;
@@ -11,12 +12,30 @@ session_start();
 
 class PaymentAPIController extends Controller
 {
+    /** @var  paymentAuthAPIRepo */
+    private $paymentAuthAPIRepo;
+
+
+    /**
+     * OrderAPIController constructor.
+     * @param UserRepository $paymentAuthAPIController
+     */
+    public function __construct(PaymentAuthAPIController $paymentAuthAPIController)
+    {
+        $this->paymentAuthAPIRepo = $paymentAuthAPIController;
+    }
+
     public function get($invoiceId, Request $request)
     {
         if (!$invoiceId) {
             return $this->sendError('Хүсэлтын утга байхгүй байна', '500');
         }
         try {
+
+            if (!isset($_SESSION['qpay_access_token']) || $_SESSION['qpay_access_token'] == '') {
+                $this->paymentAuthAPIRepo->token();
+            }
+
             $client = new Client();
             $request = $client->request(
                 'GET',
