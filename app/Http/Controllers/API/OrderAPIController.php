@@ -29,6 +29,7 @@ use DateTime;
 use Flash;
 use GuzzleHttp\Client;
 use http\Exception;
+use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
@@ -232,9 +233,8 @@ class OrderAPIController extends Controller
                                 'start_date' => new DateTime('NOW')
                             ]
                         );
-                    array_push($response->original['data']['custom_fields'],  $invoiceRes->urls);
-
-//                    $this->getOrderListener();
+                    $response->original['data']['urls'] = $invoiceRes->urls;
+                    // $this->getOrderListener();
 
                     return $this->sendResponse($response, __('lang.saved_successfully', ['operator' => __('lang.order')]));
                 }
@@ -246,13 +246,38 @@ class OrderAPIController extends Controller
     }
 
     private function getOrderListener() {
+
         $now = new DateTime('NOW');
-        $now->modify('+5 minute');
+        $now->modify('+30 minute');
         $invoiceNotAccepted = DB::table('invoice')
             ->where('active', true)
             ->where('accepted', false)
             ->where('start_date', '<' ,$now)
             ->get();
+        if (count($invoiceNotAccepted) > 0) {
+            $this->checkInvoice($invoiceNotAccepted);
+        }
+
+        $invoiceRequestTimeOut = DB::table('invoice')
+            ->where('active', true)
+            ->where('accepted', false)
+            ->where('start_date', '>' ,$now)
+            ->get();
+        if (count($invoiceRequestTimeOut) > 0) {
+            $this->cancelForInvoiceRequest($invoiceRequestTimeOut);
+        }
+    }
+
+    private function cancelForInvoiceRequest($invoiceRequestTimeOut) {
+        foreach ($invoiceRequestTimeOut as $invoice) {
+            DB::table('invoice')
+                ->where('id', $invoice->id)
+                ->update(['active' => false]);
+
+        }
+    }
+
+    private function checkInvoice($invoiceNotAccepted) {
 
         foreach ($invoiceNotAccepted as $invoice) {
             $offset = array (
@@ -280,9 +305,15 @@ class OrderAPIController extends Controller
             );
             if ($request->getStatusCode() === 200) {
                 $response = json_decode($request->getBody());
-                dd($request->getBody(), $response);
+                if (count($response->rows) > 0) {
+                    if ($response->rows[0]->payment_status === 'PAID') {
+                        $now = new DateTime('NOW');
+                        DB::table('invoice')
+                            ->where('id', $invoice->id)
+                            ->update(['accepted' => true, 'accept_date' => $now]);
 
-                return $this->sendResponse($response, 200);
+                    }
+                }
             }
         }
     }
