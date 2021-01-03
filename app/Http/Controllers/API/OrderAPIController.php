@@ -234,7 +234,9 @@ class OrderAPIController extends Controller
                         );
                     array_push($response->original['data']['custom_fields'],  $invoiceRes->urls);
 
-                    return $this->sendResponse($reData, __('lang.saved_successfully', ['operator' => __('lang.order')]));
+//                    $this->getOrderListener();
+
+                    return $this->sendResponse($response, __('lang.saved_successfully', ['operator' => __('lang.order')]));
                 }
                 return $this->sendError('Зарлагын хүсэлт үүсгэж чадсангүй', 500);
             } catch (RequestException $e) {
