@@ -13,6 +13,7 @@ namespace App\Http\Controllers\API;
 use App\Criteria\Orders\OrdersOfStatusesCriteria;
 use App\Criteria\Orders\OrdersOfUserCriteria;
 use App\Events\OrderChangedEvent;
+use App\Http\Controllers\API\payment\auth\PaymentAuthAPIController;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Notifications\AssignedOrder;
@@ -26,6 +27,7 @@ use App\Repositories\ProductOrderRepository;
 use App\Repositories\UserRepository;
 use Flash;
 use GuzzleHttp\Client;
+use http\Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
@@ -35,6 +37,7 @@ use Prettus\Repository\Exceptions\RepositoryException;
 use Prettus\Validator\Exceptions\ValidatorException;
 use Stripe\Token;
 use DB;
+use GuzzleHttp\Exception\RequestException;
 
 session_start();
 
@@ -56,6 +59,8 @@ class OrderAPIController extends Controller
     private $paymentRepository;
     /** @var  NotificationRepository */
     private $notificationRepository;
+    /** @var  paymentAuthAPIRepo */
+    private $paymentAuthAPIRepo;
 
     /**
      * OrderAPIController constructor.
@@ -65,8 +70,9 @@ class OrderAPIController extends Controller
      * @param PaymentRepository $paymentRepo
      * @param NotificationRepository $notificationRepo
      * @param UserRepository $userRepository
+     * @param UserRepository $paymentAuthAPIController
      */
-    public function __construct(OrderRepository $orderRepo, ProductOrderRepository $productOrderRepository, CartRepository $cartRepo, PaymentRepository $paymentRepo, NotificationRepository $notificationRepo, UserRepository $userRepository)
+    public function __construct(OrderRepository $orderRepo, ProductOrderRepository $productOrderRepository, CartRepository $cartRepo, PaymentRepository $paymentRepo, NotificationRepository $notificationRepo, UserRepository $userRepository, PaymentAuthAPIController $paymentAuthAPIController)
     {
         $this->orderRepository = $orderRepo;
         $this->productOrderRepository = $productOrderRepository;
@@ -74,6 +80,7 @@ class OrderAPIController extends Controller
         $this->userRepository = $userRepository;
         $this->paymentRepository = $paymentRepo;
         $this->notificationRepository = $notificationRepo;
+        $this->paymentAuthAPIRepo = $paymentAuthAPIController;
     }
 
     /**
@@ -142,10 +149,13 @@ class OrderAPIController extends Controller
             if ($payment['payment']['method'] == "Credit Card (Stripe Gateway)") {
                 return $this->stripPayment($request);
             } else {
+//                 session_destroy();
+                $this->paymentAuthAPIRepo->token();
+//                if (!isset($_SESSION['qpay_access_token']) || $_SESSION['qpay_access_token'] == '') {
+//                    $this->paymentAuthAPIRepo->token();
+//                }
 
                 $response = $this->cashPayment($request);
-
-                // dd($response->getData()->data, $response->getData()->data->product_orders[0]->product->market->id);
 
                 $order = DB::table('product_orders')
                     ->where('order_id', $response->getData()->data->id)
@@ -178,8 +188,8 @@ class OrderAPIController extends Controller
 
                 $test = (object) array();
                 $reData = array(
-                    "invoice_code" => "TEST_INVOICE",
-                    "sender_invoice_no" => "9329873948",
+                    "invoice_code" => "DULGUUN_INVOICE",
+                    "sender_invoice_no" => $this->makeSenderInvoiceNo(),
                     "sender_branch_code" => $market->id.'',
                     "invoice_receiver_code" => "terminal",
                     "invoice_receiver_data" => $test,
@@ -187,7 +197,10 @@ class OrderAPIController extends Controller
                     "lines" => []
                 );
                 $reData['lines'][0] = $line;
+            }
+            try {
 
+//                dd(env('PAYMENT_IP'), $_SESSION['qpay_access_token'], $reData);
                 $client = new Client();
                 $request = $client->request(
                     'POST',
@@ -201,7 +214,6 @@ class OrderAPIController extends Controller
                     ]
                 );
 
-
                 if ($request->getStatusCode() === 200) {
                     $res = json_decode($request->getBody());
 
@@ -211,6 +223,10 @@ class OrderAPIController extends Controller
                     return $this->sendResponse($reData, __('lang.saved_successfully', ['operator' => __('lang.order')]));
                 }
                 return $this->sendError('Зарлагын хүсэлт үүсгэж чадсангүй', 500);
+            }
+            catch (RequestException $e) {
+                dd('OrderAPIController : ',$e , $e->getMessage());
+                return $this->sendError($e->getMessage(), 500);
             }
         }
     }
@@ -387,4 +403,9 @@ class OrderAPIController extends Controller
         return $this->sendResponse($order->toArray(), __('lang.saved_successfully', ['operator' => __('lang.order')]));
     }
 
+    private function makeSenderInvoiceNo() {
+        $reString = '9K';
+        $reString .= date("YmdHis");
+        return $reString;
+    }
 }
