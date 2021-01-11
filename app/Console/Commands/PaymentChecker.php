@@ -122,7 +122,8 @@ class PaymentChecker extends Command
                         $order = DB::table('orders')->find($invoice->order_id);
                         $updated = DB::table('orders')->where('id', $invoice->order_id)->update(['order_status_id' => 5]);
                         $user = DB::table('users')->find($invoice->user_id);
-                        Notification::send([$user], new StatusChangedOrder($order));
+//                        dd($order);
+                        Notification::send([$user], new StatusChangedOrder($order->get(0)));
                     }
                 }
             }
