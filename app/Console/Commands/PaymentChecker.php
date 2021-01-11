@@ -44,6 +44,7 @@ class PaymentChecker extends Command
         $today = date("Y-m-d H:i:s");
         error_log($today.' working2');
         error_log('working3');
+        $this->paymentAuthAPIRepo->token();
         $this->getOrderListener();
         parent::__construct();
     }
@@ -61,8 +62,6 @@ class PaymentChecker extends Command
 
     private function getOrderListener() {
 
-        $this->paymentAuthAPIRepo->token();
-        error_log('start is it');
         $now = new DateTime('NOW');
         $now->modify('+10 minute');
         $invoiceNotAccepted = DB::table('invoice')
@@ -97,6 +96,7 @@ class PaymentChecker extends Command
                 "offset" => []
             );
             $reData['offset'] = $offset;
+
 
             $client = new Client();
             $request = $client->request(
