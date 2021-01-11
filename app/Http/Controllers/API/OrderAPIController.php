@@ -191,7 +191,7 @@ class OrderAPIController extends Controller
                     "sender_branch_code" => $market->id.'',
                     "invoice_receiver_code" => "terminal",
                     "invoice_receiver_data" => $test,
-                    "invoice_description" => "Invoice description",
+                    "invoice_description" => "9K",
                     "lines" => []
                 );
                 $reData['lines'][0] = $line;
