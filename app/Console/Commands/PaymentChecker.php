@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use App\Http\Controllers\API\payment\auth\PaymentAuthAPIController;
 use App\Notifications\NewOrder;
+use App\Notifications\StatusChangedOrder;
 use GuzzleHttp\Client;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Date;
@@ -114,14 +115,14 @@ class PaymentChecker extends Command
                 if (count($response->rows) > 0) {
                     if ($response->rows[0]->payment_status === 'PAID') {
                         $now = new DateTime('NOW');
-//                        DB::table('invoice')
-//                            ->where('id', $invoice->id)
-//                            ->update(['accepted' => true, 'accept_date' => $now]);
+                        DB::table('invoice')
+                            ->where('id', $invoice->id)
+                            ->update(['accepted' => true, 'accept_date' => $now]);
 
                         $order = DB::table('orders')->find($invoice->order_id);
                         $updated = DB::table('orders')->where('id', $invoice->order_id)->update(['order_status_id' => 5]);
-                        dd($order->productOrders[0]);
-                        Notification::send($order->productOrders[0]->product->market->users, new NewOrder($order));
+                        $user = DB::table('users')->find($invoice->user_id);
+                        Notification::send([$user], new StatusChangedOrder($order));
                     }
                 }
             }
