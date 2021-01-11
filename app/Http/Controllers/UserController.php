@@ -332,7 +332,6 @@ class UserController extends Controller
             $i++;
         }
         $tableResult = [];
-        dd($betweenDates);
         foreach ($betweenDates as $betweenDate) {
             $table = DB::table('employee_appointments')
                 ->updateOrInsert(
@@ -348,8 +347,6 @@ class UserController extends Controller
                 );
             array_push($tableResult, $table);
         }
-//        dd($tableResult);
-//        return $tableResult;
         DB::table('employee_appointments')
             ->updateOrInsert(
                 ['user_id' => $id, 'active_day' => $input['active_date']],

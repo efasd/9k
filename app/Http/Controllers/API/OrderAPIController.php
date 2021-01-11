@@ -151,11 +151,7 @@ class OrderAPIController extends Controller
             if ($payment['payment']['method'] == "Credit Card (Stripe Gateway)") {
                 return $this->stripPayment($request);
             } else {
-//                 session_destroy();
                 $this->paymentAuthAPIRepo->token();
-//                if (!isset($_SESSION['qpay_access_token']) || $_SESSION['qpay_access_token'] == '') {
-//                    $this->paymentAuthAPIRepo->token();
-//                }
 
                 $response = $this->cashPayment($request);
 
@@ -245,8 +241,14 @@ class OrderAPIController extends Controller
         }
     }
 
+    public function __invoke()
+    {
+        error_log('__invoke');
+    }
+
     private function getOrderListener() {
 
+        error_log('start is it');
         $now = new DateTime('NOW');
         $now->modify('+30 minute');
         $invoiceNotAccepted = DB::table('invoice')
@@ -273,7 +275,6 @@ class OrderAPIController extends Controller
             DB::table('invoice')
                 ->where('id', $invoice->id)
                 ->update(['active' => false]);
-
         }
     }
 
@@ -318,6 +319,39 @@ class OrderAPIController extends Controller
         }
     }
 
+    public function paymentChecker($invoiceId)
+    {
+        if (!$invoiceId) {
+            return $this->sendError($invoiceId.' : Хүсэлтын утга байхгүй байна', '500');
+        }
+        $offset = array ("page_number" => 1, "page_limit" => 100 );
+        $reData = array(
+            "object_type" => "INVOICE",
+            "object_id" => $invoiceId,
+            "offset" => []
+        );
+        $reData['offset'] = $offset;
+
+        $client = new Client();
+        $request = $client->request(
+            'POST',
+            env('PAYMENT_IP') . '/v2/payment/check',
+            [
+                'headers' => [
+                    'Authorization' => 'Bearer ' . $_SESSION['qpay_access_token'],
+                    'Content-Type' => 'application/json'
+                ],
+                'body' => json_encode($reData)
+            ]
+        );
+        if ($request->getStatusCode() === 200) {
+            $response = json_decode($request->getBody());
+
+            return $this->sendResponse($response, 200);
+        }
+        return $this->sendError('Хүсэлтыг авж чадсангүй', 500);
+    }
+
     /**
      * @param Request $request
      * @return \Illuminate\Http\JsonResponse|mixed
@@ -340,7 +374,6 @@ class OrderAPIController extends Controller
                     "name" => $user->name,
                 )
             ));
-            dd($stripeToken);
             if ($stripeToken->created > 0) {
                 if (empty($input['delivery_address_id'])) {
                     $order = $this->orderRepository->create(
@@ -451,8 +484,8 @@ class OrderAPIController extends Controller
                                 'is_active' => 1
                             ]
                         );
-                    // $appointment = DB::table('employee_appointments')->find($request->input('hint'));
-                    // $order->employee_appointment_during = $appointment->active_day.' | '.$appointment->start_date;
+                     $appointment = DB::table('employee_appointments')->find($request->input('hint'));
+                     $order->employee_appointment_during = $appointment->active_day.' | '.$appointment->start_date;
 
                     if($request->input('market_id')) {
                         $market = DB::table('markets')->find($request->input('market_id'));

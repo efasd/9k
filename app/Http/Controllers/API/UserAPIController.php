@@ -275,6 +275,10 @@ class UserAPIController extends Controller
             ->where('employee_id', $request->input('employeeId'))
             ->get();
 
+        foreach ($appointment as $value) {
+            $value->start_date = substr($value->start_date, 0, -3);
+            $value->end_date = substr($value->end_date, 0, -3);
+        }
         if($appointment->count() > 0) {
             return $this->sendResponse(true, $appointment);
         } else {
@@ -332,6 +336,10 @@ class UserAPIController extends Controller
             }
             if (!$alreadyFinished) {
                 return $this->sendResponse(true, 'цаг дууссан байна');
+            }
+            foreach ($tableResult as $value) {
+                $value->start_date = substr($value->start_date, 0, -3);
+                $value->end_date = substr($value->end_date, 0, -3);
             }
             if($tableResult !== 0) {
                 return $this->sendResponse(true, $tableResult);

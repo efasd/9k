@@ -57,7 +57,7 @@ class PaymentAPIController extends Controller
         return $this->sendError('Хүсэлтыг авж чадсангүй', 500);
     }
     
-    public function check($invoiceId, Request $request)
+    public function check($invoiceId)
     {
         if (!$invoiceId) {
             return $this->sendError('Хүсэлтын утга байхгүй байна', '500');
@@ -138,4 +138,5 @@ class PaymentAPIController extends Controller
     {
 
     }
+
 }
