@@ -120,35 +120,11 @@ class PaymentChecker extends Command
 
                         $order = DB::table('orders')->find($invoice->order_id);
                         $updated = DB::table('orders')->where('id', $invoice->order_id)->update(['order_status_id' => 5]);
+                        error_log($invoice->user_id);
                         $user = DB::table('users')->find($invoice->user_id);
-
-//                        if ($request->input('hint') !== null) {
-//                            $table = DB::table('employee_appointments')
-//                                ->where('id', $request->input('hint'))
-//                                ->update(
-//                                    [
-//                                        'user_id' => $order->user_id,
-//                                        'is_active' => 1
-//                                    ]
-//                                );
-//                            $appointment = DB::table('employee_appointments')->find($request->input('hint'));
-//                            $order->employee_appointment_during = $appointment->active_day.' | '.$appointment->start_date;
-//
-//                            if($request->input('market_id')) {
-//                                $market = DB::table('markets')->find($request->input('market_id'));
-//                                if ($market) {
-//                                    $order->balance_name = $market->balance_name;
-//                                    $order->balance_number = $market->balance_number;
-//                                    $order->name_of_bank = $market->name_of_bank;
-//                                    $order->balance_min_value = $market->balance_min_value;
-//                                }
-//                            }
-//                            if ($table === 0) {
-//                                return $this->sendError('Цаг бүртгэхэд алдаа гарлааа');
-//                            }
-//                        }
-
-                        Notification::send([$user], new StatusChangedOrder($order->get(0)));
+                        error_log($user->get());
+                        error_log($order);
+                        Notification::send([$user], new StatusChangedOrder($order));
                     }
                 }
             }
