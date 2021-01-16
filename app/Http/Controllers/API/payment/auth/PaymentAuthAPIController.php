@@ -2,12 +2,8 @@
 
 namespace App\Http\Controllers\API\payment\auth;
 
-use DateTime;
-use Illuminate\Http\Request;
-use App\Http\Controllers\Controller;
-
 use GuzzleHttp\Client;
-use Illuminate\Support\Facades\Date;
+use App\Http\Controllers\Controller;
 
 class PaymentAuthAPIController extends Controller
 {
