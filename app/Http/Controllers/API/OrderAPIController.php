@@ -191,7 +191,7 @@ class OrderAPIController extends Controller
                     "sender_branch_code" => $market->id.'',
                     "invoice_receiver_code" => "terminal",
                     "invoice_receiver_data" => $test,
-                    "invoice_description" => "Invoice description",
+                    "invoice_description" => $response->getData()->data->id . '',
                     "lines" => []
                 );
                 $reData['lines'][0] = $line;
@@ -241,10 +241,6 @@ class OrderAPIController extends Controller
         }
     }
 
-    public function __invoke()
-    {
-        error_log('__invoke');
-    }
 
     private function getOrderListener() {
 

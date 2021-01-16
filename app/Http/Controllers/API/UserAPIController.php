@@ -9,6 +9,7 @@
 
 namespace App\Http\Controllers\API;
 
+use App\Console\Commands\PaymentChecker;
 use App\Http\Controllers\Controller;
 use App\Models\EmployeeAppointment;
 use App\Models\User;
@@ -17,6 +18,7 @@ use App\Repositories\RoleRepository;
 use App\Repositories\UploadRepository;
 use App\Repositories\UserRepository;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
 use Prettus\Validator\Exceptions\ValidatorException;
@@ -268,6 +270,10 @@ class UserAPIController extends Controller
         if($employeeCheck->count() === 0) {
             return $this->sendError('Ажилтан салбар дээр бүртгэлгүй байна', 500);
         }
+        $now = date("Y-m-d H:i:s");
+        if (strtotime(date("Y-m-d", strtotime($now))) > strtotime($request->input('date'))) {
+            return $this->sendResponse(true, 'Өнгөрсөн цаг дээр цаг захиалах боломжгүй');
+        }
 
         $appointment = DB::table('employee_appointments')
             ->where('active_day', 'like', '%'.$request->input('date').'%')
@@ -282,8 +288,12 @@ class UserAPIController extends Controller
         if($appointment->count() > 0) {
             return $this->sendResponse(true, $appointment);
         } else {
+
             $startDate = date_time_set(date_create($request->input('date')), date('H', strtotime($market->start_date)), date('i', strtotime($market->start_date)));
             $endDate = date_time_set(date_create($request->input('date')), date('H', strtotime($market->end_date)), date('i', strtotime($market->end_date)));
+
+            $nowDateTime = new DateTime();
+
             $betweenDates = [];
             while($startDate < $endDate) {
                 $dates = array();
@@ -297,11 +307,11 @@ class UserAPIController extends Controller
                 $dates['startTime'] = $startDate;
                 $dates['endDate'] = $nextEndTime;
                 $dates['activeDate'] = $activeDay;
-
-                array_push($betweenDates, $dates);
+                if ($startDate > $nowDateTime) {
+                    array_push($betweenDates, $dates);
+                }
                 $startDate = $nextEndTime;
             }
-
             $tableResult = [];
             foreach ($betweenDates as $betweenDate) {
                 $inserted = DB::table('employee_appointments')
