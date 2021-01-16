@@ -749,7 +749,7 @@ return [
     'market_delivery_fee' => 'Delivery Fee',
     'market_delivery_fee_help' => 'Edit the delivery fee (Ex 5 for 5$ per order)',
     'market_delivery_fee_placeholder' => 'Edit the delivery fee amount',
-    'market_desc' => 'Markets Management',
+    'market_desc' => 'Merchant Management',
     'market_description' => 'Description',
     'market_description_help' => 'Insert Description',
     'market_description_placeholder' => 'Insert Description',

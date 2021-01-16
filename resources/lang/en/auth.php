@@ -3,7 +3,7 @@
 return [
     'agree' => 'I agree to the terms',
     'already_member' => 'I already have a membership',
-    'email' => 'Email Address',
+    'email' => 'Email',
     'failed' => 'These credentials do not match our records.',
     'forgot_password' => 'I forgot my password',
     'login' => 'Login',
