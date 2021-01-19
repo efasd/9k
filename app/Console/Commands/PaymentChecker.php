@@ -42,8 +42,6 @@ class PaymentChecker extends Command
     {
         $this->paymentAuthAPIRepo = $paymentAuthAPIController;
         $today = date("Y-m-d H:i:s");
-        error_log($today.' working2');
-        error_log('working3');
         $this->paymentAuthAPIRepo->token();
         $this->getOrderListener();
         parent::__construct();
@@ -122,8 +120,7 @@ class PaymentChecker extends Command
                         $order = DB::table('orders')->find($invoice->order_id);
                         $updated = DB::table('orders')->where('id', $invoice->order_id)->update(['order_status_id' => 5]);
                         $user = DB::table('users')->find($invoice->user_id);
-//                        dd($order);
-                        Notification::send([$user], new StatusChangedOrder($order->get(0)));
+                        Notification::send([$user], new StatusChangedOrder($order));
                     }
                 }
             }

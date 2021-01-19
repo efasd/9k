@@ -28,8 +28,6 @@ use App\Repositories\UserRepository;
 use DateTime;
 use Flash;
 use GuzzleHttp\Client;
-use http\Exception;
-use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
@@ -131,10 +129,7 @@ class OrderAPIController extends Controller
         if (empty($order)) {
             return $this->sendError('Order not found');
         }
-
         return $this->sendResponse($order->toArray(), 'Order retrieved successfully');
-
-
     }
 
     /**
@@ -191,7 +186,7 @@ class OrderAPIController extends Controller
                     "sender_branch_code" => $market->id.'',
                     "invoice_receiver_code" => "terminal",
                     "invoice_receiver_data" => $test,
-                    "invoice_description" => "9K",
+                    "invoice_description" => $response->getData()->data->id . '',
                     "lines" => []
                 );
                 $reData['lines'][0] = $line;
@@ -230,7 +225,6 @@ class OrderAPIController extends Controller
                             ]
                         );
                     $response->original['data']['urls'] = $invoiceRes->urls;
-                    // $this->getOrderListener();
 
                     return $this->sendResponse($response, __('lang.saved_successfully', ['operator' => __('lang.order')]));
                 }
@@ -241,14 +235,8 @@ class OrderAPIController extends Controller
         }
     }
 
-    public function __invoke()
-    {
-        error_log('__invoke');
-    }
 
     private function getOrderListener() {
-
-        error_log('start is it');
         $now = new DateTime('NOW');
         $now->modify('+30 minute');
         $invoiceNotAccepted = DB::table('invoice')
@@ -312,7 +300,6 @@ class OrderAPIController extends Controller
                         DB::table('invoice')
                             ->where('id', $invoice->id)
                             ->update(['accepted' => true, 'accept_date' => $now]);
-
                     }
                 }
             }
@@ -449,7 +436,9 @@ class OrderAPIController extends Controller
         } catch (ValidatorException $e) {
             return $this->sendError($e->getMessage());
         }
-        return $this->sendResponse($order->toArray(), __('lang.saved_successfully', ['operator' => __('lang.order')]));
+        return $this->sendResponse(
+            $order->toArray(), __('lang.saved_successfully', ['operator' => __('lang.order')])
+        );
     }
 
     /**
