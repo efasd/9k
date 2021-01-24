@@ -24,6 +24,16 @@ class PaymentAuthAPIController extends Controller
             $_SESSION['qpay_access_token'] = $token->{'access_token'};
             $_SESSION['qpay_access_token_refresh'] = $token->{'refresh_token'};
             $_SESSION['qpay_token_expire_time'] = $token->{'refresh_expires_in'};
+            $nowDateTime = new \DateTime();
+//            print_r('-----------nowDateTime-----');
+//            print_r($nowDateTime);
+//            print_r($token);
+//            print_r('---------qpay_token_expire_time-------');
+//            print_r($_SESSION['qpay_token_expire_time']);
+//            $nowDateTime = new DateTime();
+//            if ($nowDateTime > $token->{'refresh_expires_in'}) {
+//
+//            }
             return $this->sendResponse('Token амжилттай авлаа ', 200);
         }
         return $this->sendError('Token авж чадсангүй', 500);

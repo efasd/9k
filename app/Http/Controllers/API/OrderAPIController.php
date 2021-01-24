@@ -29,6 +29,7 @@ use DateTime;
 use Flash;
 use GuzzleHttp\Client;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
 use InfyOm\Generator\Criteria\LimitOffsetCriteria;
@@ -36,7 +37,6 @@ use Prettus\Repository\Criteria\RequestCriteria;
 use Prettus\Repository\Exceptions\RepositoryException;
 use Prettus\Validator\Exceptions\ValidatorException;
 use Stripe\Token;
-use DB;
 use GuzzleHttp\Exception\RequestException;
 
 session_start();
@@ -191,47 +191,58 @@ class OrderAPIController extends Controller
                 );
                 $reData['lines'][0] = $line;
             }
-            try {
+            $urls = [];
+            $cash = (object)[
+                'name' => 'Бэлэнээр төрөл',
+                'description' => '',
+                'logo' => 'https://9000.mn/storage/app/public/282/conversions/cash-thumb.jpg',
+                'link' => ''
+            ];
+            array_push($urls, $cash);
+            $response->original['data']['urls'] = $urls;
 
-                $client = new Client();
-                $request = $client->request(
-                    'POST',
-                    env('PAYMENT_IP') . '/v2/invoice',
-                    [
-                        'headers' => [
-                            'Authorization' => 'Bearer ' . $_SESSION['qpay_access_token'],
-                            'Content-Type' => 'application/json'
-                        ],
-                        'body' => json_encode($reData)
-                    ]
-                );
-
-                if ($request->getStatusCode() === 200) {
-                    $invoiceRes = json_decode($request->getBody());
-                    $insertInvoice = DB::table('invoice')
-                        ->updateOrInsert(
-                            [
-                                'user_id' => $response->getData()->data->user->id,
-                                'order_id' => $response->getData()->data->id
-                            ],
-                            [
-                                'user_id' => $response->getData()->data->user->id,
-                                'order_id' => $response->getData()->data->id,
-                                'active' => true,
-                                'accepted' => false,
-                                'invoice_id' => $invoiceRes->invoice_id,
-                                'qr_text' => $invoiceRes->qr_text,
-                                'start_date' => new DateTime('NOW')
-                            ]
-                        );
-                    $response->original['data']['urls'] = $invoiceRes->urls;
-
-                    return $this->sendResponse($response, __('lang.saved_successfully', ['operator' => __('lang.order')]));
-                }
-                return $this->sendError('Зарлагын хүсэлт үүсгэж чадсангүй', 500);
-            } catch (RequestException $e) {
-                return $this->sendError($e->getMessage(), 500);
-            }
+            return $this->sendResponse($response, __('lang.saved_successfully', ['operator' => __('lang.order')]));
+//            try {
+//
+//                $client = new Client();
+//                $request = $client->request(
+//                    'POST',
+//                    env('PAYMENT_IP') . '/v2/invoice',
+//                    [
+//                        'headers' => [
+//                            'Authorization' => 'Bearer ' . $_SESSION['qpay_access_token'],
+//                            'Content-Type' => 'application/json'
+//                        ],
+//                        'body' => json_encode($reData)
+//                    ]
+//                );
+//
+//                if ($request->getStatusCode() === 200) {
+//                    $invoiceRes = json_decode($request->getBody());
+//                    $insertInvoice = DB::table('invoice')
+//                        ->updateOrInsert(
+//                            [
+//                                'user_id' => $response->getData()->data->user->id,
+//                                'order_id' => $response->getData()->data->id
+//                            ],
+//                            [
+//                                'user_id' => $response->getData()->data->user->id,
+//                                'order_id' => $response->getData()->data->id,
+//                                'active' => true,
+//                                'accepted' => false,
+//                                'invoice_id' => $invoiceRes->invoice_id,
+//                                'qr_text' => $invoiceRes->qr_text,
+//                                'start_date' => new DateTime('NOW')
+//                            ]
+//                        );
+//                    $response->original['data']['urls'] = $invoiceRes->urls;
+//
+//                    return $this->sendResponse($response, __('lang.saved_successfully', ['operator' => __('lang.order')]));
+//                }
+//                return $this->sendError('Зарлагын хүсэлт үүсгэж чадсангүй', 500);
+//            } catch (RequestException $e) {
+//                return $this->sendError($e->getMessage(), 500);
+//            }
         }
     }
 
@@ -435,6 +446,15 @@ class OrderAPIController extends Controller
 
         } catch (ValidatorException $e) {
             return $this->sendError($e->getMessage());
+        }
+
+        $appointment = DB::table('employee_appointments')->find($input['hint']);
+        if ($appointment) {
+            $employeeInformation = DB::table('users')->find($appointment->employee_id);
+            if ($employeeInformation) {
+                $order->employee_appointment_during = $order->employee_appointment_during .' : '.$employeeInformation->name;
+            }
+
         }
         return $this->sendResponse(
             $order->toArray(), __('lang.saved_successfully', ['operator' => __('lang.order')])
