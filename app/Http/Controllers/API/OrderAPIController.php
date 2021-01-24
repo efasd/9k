@@ -193,7 +193,7 @@ class OrderAPIController extends Controller
             }
             $urls = [];
             $cash = (object)[
-                'name' => 'Бэлэнээр төрөл',
+                'name' => 'Бэлнээр төрөл',
                 'description' => '',
                 'logo' => 'https://9000.mn/storage/app/public/282/conversions/cash-thumb.jpg',
                 'link' => ''
