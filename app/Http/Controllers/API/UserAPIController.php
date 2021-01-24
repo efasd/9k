@@ -262,6 +262,9 @@ class UserAPIController extends Controller
             return $this->sendResponse(false, 'Маркет дээр эхлэх болон дуусах хугацаа оруулаагүй байна');
         }
 
+        $nowDateTimes = new DateTime();
+        print_r("nowDateTime : " . $nowDateTimes->format('Y-m-d H:i:s'));
+
         $employeeCheck = DB::table('employee_markets')
             ->where('user_id', $request->input('employeeId'))
             ->where('market_id', $request->input('marketId'))
@@ -279,6 +282,8 @@ class UserAPIController extends Controller
             ->where('active_day', 'like', '%'.$request->input('date').'%')
             ->where('is_active', '0')
             ->where('employee_id', $request->input('employeeId'))
+            ->where('start_date', '>=', $nowDateTimes->format('H:i:s'))
+            ->where('active_day', '>=', $nowDateTimes->format('Y-m-d'))
             ->get();
 
         foreach ($appointment as $value) {
