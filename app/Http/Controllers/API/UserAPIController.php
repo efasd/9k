@@ -263,7 +263,6 @@ class UserAPIController extends Controller
         }
 
         $nowDateTimes = new DateTime();
-        print_r("nowDateTime : " . $nowDateTimes->format('Y-m-d H:i:s'));
 
         $employeeCheck = DB::table('employee_markets')
             ->where('user_id', $request->input('employeeId'))

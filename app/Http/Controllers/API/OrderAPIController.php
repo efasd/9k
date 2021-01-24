@@ -29,6 +29,7 @@ use DateTime;
 use Flash;
 use GuzzleHttp\Client;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
 use InfyOm\Generator\Criteria\LimitOffsetCriteria;
@@ -36,7 +37,6 @@ use Prettus\Repository\Criteria\RequestCriteria;
 use Prettus\Repository\Exceptions\RepositoryException;
 use Prettus\Validator\Exceptions\ValidatorException;
 use Stripe\Token;
-use DB;
 use GuzzleHttp\Exception\RequestException;
 
 session_start();
@@ -446,6 +446,15 @@ class OrderAPIController extends Controller
 
         } catch (ValidatorException $e) {
             return $this->sendError($e->getMessage());
+        }
+
+        $appointment = DB::table('employee_appointments')->find($input['hint']);
+        if ($appointment) {
+            $employeeInformation = DB::table('users')->find($appointment->employee_id);
+            if ($employeeInformation) {
+                $order->employee_appointment_during = $order->employee_appointment_during .' : '.$employeeInformation->name;
+            }
+
         }
         return $this->sendResponse(
             $order->toArray(), __('lang.saved_successfully', ['operator' => __('lang.order')])
