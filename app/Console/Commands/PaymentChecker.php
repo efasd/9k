@@ -51,7 +51,6 @@ class PaymentChecker extends Command
         $today = date("Y-m-d H:i:s");
         print_r('token take start' . $today);
         $this->paymentAuthAPIRepo->token();
-        print_r('token take start' . $today);
 
         $this->getOrderListener();
         parent::__construct();
