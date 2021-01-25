@@ -454,7 +454,7 @@ class OrderAPIController extends Controller
             if ($employeeInformation) {
                 $order->employee_appointment_during = $order->employee_appointment_during .' : '.$employeeInformation->name;
             }
-
+             DB::table('orders')->where('id', $order->id)->update(['employee_appointment_during' => $order->employee_appointment_during]);
         }
         return $this->sendResponse(
             $order->toArray(), __('lang.saved_successfully', ['operator' => __('lang.order')])
