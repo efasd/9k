@@ -452,9 +452,11 @@ class OrderAPIController extends Controller
         if ($appointment) {
             $employeeInformation = DB::table('users')->find($appointment->employee_id);
             if ($employeeInformation) {
-                $order->employee_appointment_during = $order->employee_appointment_during .' : '.$employeeInformation->name;
+                if ($order->employee_appointment_during && count(explode('|', $order->employee_appointment_during)) <= 3) {
+                    $order->employee_appointment_during = $appointment->active_day.' | '.$appointment->start_date .' | '.$employeeInformation->name;
+                }
             }
-             DB::table('orders')->where('id', $order->id)->update(['employee_appointment_during' => $order->employee_appointment_during]);
+            DB::table('orders')->where('id', $order->id)->update(['employee_appointment_during' => $order->employee_appointment_during]);
         }
         return $this->sendResponse(
             $order->toArray(), __('lang.saved_successfully', ['operator' => __('lang.order')])
@@ -500,8 +502,11 @@ class OrderAPIController extends Controller
                             ]);
                     }
                     $appointment = DB::table('employee_appointments')->find($request->input('hint'));
-                    if ($appointment) {
-                        $order->employee_appointment_during = $appointment->active_day.' | '.$appointment->start_date;
+                    $employeeInformation = DB::table('users')->find($appointment->employee_id);
+                    if ($employeeInformation) {
+                        if ($order->employee_appointment_during && count(explode('|', $order->employee_appointment_during)) <= 3) {
+                            $order->employee_appointment_during = $appointment->active_day.' | '.$appointment->start_date .' | '.$employeeInformation->name;
+                        }
                     }
 
                     if($request->input('market_id')) {

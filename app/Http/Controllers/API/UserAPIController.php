@@ -335,7 +335,12 @@ class UserAPIController extends Controller
             foreach ($betweenDates as $betweenDate) {
                 $inserted = DB::table('employee_appointments')
                     ->updateOrInsert(
-                        ['employee_id' => $request->input('employeeId'), 'active_day' => $betweenDate['activeDate'], 'start_date' => $betweenDate['startTime']],
+                        [
+                            'employee_id' => $request->input('employeeId'),
+                            'product_id' => $request->input('productId'),
+                            'active_day' => $betweenDate['activeDate'],
+                            'start_date' => $betweenDate['startTime']
+                        ],
                         [
                             'start_date' => $betweenDate['startTime'],
                             'end_date' => $betweenDate['endDate'],
@@ -343,7 +348,7 @@ class UserAPIController extends Controller
                             'employee_id' => $request->input('employeeId'),
                             'product_id' => $request->input('productId'),
                             'active_day' => $betweenDate['activeDate'],
-                            'created_at' => date('Y-m-d H:i:s'),
+                            'created_at' => date('Y-m-d H:i:s')
                         ]
                     );
                 if ($inserted) {
@@ -355,6 +360,7 @@ class UserAPIController extends Controller
                             ['product_id', '=', $request->input('productId')],
                             ['start_date', 'like', '%'.$getTime.'%']
                         ])->get();
+
                     array_push($tableResult, $employeeAppointment->get(0));
                 }
             }
