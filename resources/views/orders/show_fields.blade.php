@@ -93,9 +93,9 @@
 
     </div>
 
-    {!! Form::label('hint', 'Hint:', ['class' => 'col-4 control-label']) !!}
+    {!! Form::label('employee_appointment_during', 'Захиалсан цаг:', ['class' => 'col-4 control-label']) !!}
     <div class="col-8">
-        <p>{!! $order->hint !!}</p>
+        <p>{!! $order->employee_appointment_during !!}</p>
     </div>
 
 </div>
@@ -107,5 +107,3 @@
 {{--    <p>{!! $order->tax !!}</p>--}}
 {{--  </div>--}}
 {{--</div>--}}
-
-

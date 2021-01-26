@@ -2,7 +2,7 @@
 @section('content')
     <div class="card-body login-card-body">
         <div class="card-body login-card-body">
-            <p class="login-box-msg">{{__('auth.login_title')}}</p>
+            <!-- <p class="login-box-msg">{{__('auth.login_title')}}</p> -->
 
             <form action="{{ url('/login') }}" method="post">
                 {!! csrf_field() !!}
@@ -70,8 +70,8 @@
 
             </form>
 
-            @if(setting('enable_facebook',false) || setting('enable_google',false) || setting('enable_twitter',false))
-                <div class="social-auth-links text-center mb-3">
+            <!-- @if(setting('enable_facebook',false) || setting('enable_google',false) || setting('enable_twitter',false)) -->
+                <!-- <div class="social-auth-links text-center mb-3">
                     <p style="text-transform: uppercase">- {{__('lang.or')}} -</p>
                     @if(setting('enable_facebook',false))
                         <a href="{{url('login/facebook')}}" class="btn btn-block btn-facebook">
@@ -86,18 +86,16 @@
                         <a href="{{url('login/twitter')}}" class="btn btn-block btn-twitter"> <i class="fa fa-twitter mr-2"></i> {{__('auth.login_twitter')}}
                         </a>
                     @endif
-                </div>
+                </div> -->
                 <!-- /.social-auth-links -->
-            @endif
+            <!-- @endif -->
 
-            <p class="mb-1 text-center">
+            <!-- <p class="mb-1 text-center">
                 <a href="{{ url('/password/reset') }}">{{__('auth.forgot_password')}}</a>
             </p>
             <p class="mb-0 text-center">
                 <a href="{{ url('/register') }}" class="text-center">{{__('auth.register_new_member')}}</a>
-            </p>
+            </p> -->
         </div>
     </div>
 @endsection
-
-
