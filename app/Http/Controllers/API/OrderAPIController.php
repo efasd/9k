@@ -25,10 +25,11 @@ use App\Repositories\OrderRepository;
 use App\Repositories\PaymentRepository;
 use App\Repositories\ProductOrderRepository;
 use App\Repositories\UserRepository;
+use DateTime;
 use Flash;
 use GuzzleHttp\Client;
-use http\Exception;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
 use InfyOm\Generator\Criteria\LimitOffsetCriteria;
@@ -36,7 +37,6 @@ use Prettus\Repository\Criteria\RequestCriteria;
 use Prettus\Repository\Exceptions\RepositoryException;
 use Prettus\Validator\Exceptions\ValidatorException;
 use Stripe\Token;
-use DB;
 use GuzzleHttp\Exception\RequestException;
 
 session_start();
@@ -129,10 +129,7 @@ class OrderAPIController extends Controller
         if (empty($order)) {
             return $this->sendError('Order not found');
         }
-
         return $this->sendResponse($order->toArray(), 'Order retrieved successfully');
-
-
     }
 
     /**
@@ -149,11 +146,7 @@ class OrderAPIController extends Controller
             if ($payment['payment']['method'] == "Credit Card (Stripe Gateway)") {
                 return $this->stripPayment($request);
             } else {
-//                 session_destroy();
                 $this->paymentAuthAPIRepo->token();
-//                if (!isset($_SESSION['qpay_access_token']) || $_SESSION['qpay_access_token'] == '') {
-//                    $this->paymentAuthAPIRepo->token();
-//                }
 
                 $response = $this->cashPayment($request);
 
@@ -178,7 +171,7 @@ class OrderAPIController extends Controller
                 }
 
                 $line = array (
-                    "line_description" => "Invoice description",
+                    "line_description" => $response->getData()->data->id . '',
                     "line_quantity" => "1.00",
                     "line_unit_price" => $totalAmount,
                     "discounts" => [],
@@ -193,42 +186,168 @@ class OrderAPIController extends Controller
                     "sender_branch_code" => $market->id.'',
                     "invoice_receiver_code" => "terminal",
                     "invoice_receiver_data" => $test,
-                    "invoice_description" => "Invoice description",
+                    "invoice_description" => $response->getData()->data->id . '',
                     "lines" => []
                 );
                 $reData['lines'][0] = $line;
             }
-            try {
+            $urls = [];
+            $cash = (object)[
+                'name' => 'Бэлнээр төрөл',
+                'description' => '',
+                'logo' => 'https://9000.mn/storage/app/public/282/conversions/cash-thumb.jpg',
+                'link' => ''
+            ];
+            array_push($urls, $cash);
+            $response->original['data']['urls'] = $urls;
 
-//                dd(env('PAYMENT_IP'), $_SESSION['qpay_access_token'], $reData);
-                $client = new Client();
-                $request = $client->request(
-                    'POST',
-                    env('PAYMENT_IP') . '/v2/invoice',
-                    [
-                        'headers' => [
-                            'Authorization' => 'Bearer ' . $_SESSION['qpay_access_token'],
-                            'Content-Type' => 'application/json'
-                        ],
-                        'body' => json_encode($reData)
-                    ]
-                );
+            return $this->sendResponse($response, __('lang.saved_successfully', ['operator' => __('lang.order')]));
+//            try {
+//
+//                $client = new Client();
+//                $request = $client->request(
+//                    'POST',
+//                    env('PAYMENT_IP') . '/v2/invoice',
+//                    [
+//                        'headers' => [
+//                            'Authorization' => 'Bearer ' . $_SESSION['qpay_access_token'],
+//                            'Content-Type' => 'application/json'
+//                        ],
+//                        'body' => json_encode($reData)
+//                    ]
+//                );
+//
+//                if ($request->getStatusCode() === 200) {
+//                    $invoiceRes = json_decode($request->getBody());
+//                    $insertInvoice = DB::table('invoice')
+//                        ->updateOrInsert(
+//                            [
+//                                'user_id' => $response->getData()->data->user->id,
+//                                'order_id' => $response->getData()->data->id
+//                            ],
+//                            [
+//                                'user_id' => $response->getData()->data->user->id,
+//                                'order_id' => $response->getData()->data->id,
+//                                'active' => true,
+//                                'accepted' => false,
+//                                'invoice_id' => $invoiceRes->invoice_id,
+//                                'qr_text' => $invoiceRes->qr_text,
+//                                'start_date' => new DateTime('NOW')
+//                            ]
+//                        );
+//                    $response->original['data']['urls'] = $invoiceRes->urls;
+//
+//                    return $this->sendResponse($response, __('lang.saved_successfully', ['operator' => __('lang.order')]));
+//                }
+//                return $this->sendError('Зарлагын хүсэлт үүсгэж чадсангүй', 500);
+//            } catch (RequestException $e) {
+//                return $this->sendError($e->getMessage(), 500);
+//            }
+        }
+    }
 
-                if ($request->getStatusCode() === 200) {
-                    $res = json_decode($request->getBody());
 
-                    $reData = [];
-                    array_push($reData, $response);
-                    array_push($reData, $res);
-                    return $this->sendResponse($reData, __('lang.saved_successfully', ['operator' => __('lang.order')]));
+    private function getOrderListener() {
+        $now = new DateTime('NOW');
+        $now->modify('+30 minute');
+        $invoiceNotAccepted = DB::table('invoice')
+            ->where('active', true)
+            ->where('accepted', false)
+            ->where('start_date', '<' ,$now)
+            ->get();
+        if (count($invoiceNotAccepted) > 0) {
+            $this->checkInvoice($invoiceNotAccepted);
+        }
+
+        $invoiceRequestTimeOut = DB::table('invoice')
+            ->where('active', true)
+            ->where('accepted', false)
+            ->where('start_date', '>' ,$now)
+            ->get();
+        if (count($invoiceRequestTimeOut) > 0) {
+            $this->cancelForInvoiceRequest($invoiceRequestTimeOut);
+        }
+    }
+
+    private function cancelForInvoiceRequest($invoiceRequestTimeOut) {
+        foreach ($invoiceRequestTimeOut as $invoice) {
+            DB::table('invoice')
+                ->where('id', $invoice->id)
+                ->update(['active' => false]);
+        }
+    }
+
+    private function checkInvoice($invoiceNotAccepted) {
+
+        foreach ($invoiceNotAccepted as $invoice) {
+            $offset = array (
+                "page_number" => 1,
+                "page_limit" => 100
+            );
+            $reData = array(
+                "object_type" => "INVOICE",
+                "object_id" => $invoice->invoice_id,
+                "offset" => []
+            );
+            $reData['offset'] = $offset;
+
+            $client = new Client();
+            $request = $client->request(
+                'POST',
+                env('PAYMENT_IP') . '/v2/payment/check',
+                [
+                    'headers' => [
+                        'Authorization' => 'Bearer ' . $_SESSION['qpay_access_token'],
+                        'Content-Type' => 'application/json'
+                    ],
+                    'body' => json_encode($reData)
+                ]
+            );
+            if ($request->getStatusCode() === 200) {
+                $response = json_decode($request->getBody());
+                if (count($response->rows) > 0) {
+                    if ($response->rows[0]->payment_status === 'PAID') {
+                        $now = new DateTime('NOW');
+                        DB::table('invoice')
+                            ->where('id', $invoice->id)
+                            ->update(['accepted' => true, 'accept_date' => $now]);
+                    }
                 }
-                return $this->sendError('Зарлагын хүсэлт үүсгэж чадсангүй', 500);
-            }
-            catch (RequestException $e) {
-                dd('OrderAPIController : ',$e , $e->getMessage());
-                return $this->sendError($e->getMessage(), 500);
             }
         }
+    }
+
+    public function paymentChecker($invoiceId)
+    {
+        if (!$invoiceId) {
+            return $this->sendError($invoiceId.' : Хүсэлтын утга байхгүй байна', '500');
+        }
+        $offset = array ("page_number" => 1, "page_limit" => 100 );
+        $reData = array(
+            "object_type" => "INVOICE",
+            "object_id" => $invoiceId,
+            "offset" => []
+        );
+        $reData['offset'] = $offset;
+
+        $client = new Client();
+        $request = $client->request(
+            'POST',
+            env('PAYMENT_IP') . '/v2/payment/check',
+            [
+                'headers' => [
+                    'Authorization' => 'Bearer ' . $_SESSION['qpay_access_token'],
+                    'Content-Type' => 'application/json'
+                ],
+                'body' => json_encode($reData)
+            ]
+        );
+        if ($request->getStatusCode() === 200) {
+            $response = json_decode($request->getBody());
+
+            return $this->sendResponse($response, 200);
+        }
+        return $this->sendError('Хүсэлтыг авж чадсангүй', 500);
     }
 
     /**
@@ -253,7 +372,6 @@ class OrderAPIController extends Controller
                     "name" => $user->name,
                 )
             ));
-            dd($stripeToken);
             if ($stripeToken->created > 0) {
                 if (empty($input['delivery_address_id'])) {
                     $order = $this->orderRepository->create(
@@ -329,7 +447,18 @@ class OrderAPIController extends Controller
         } catch (ValidatorException $e) {
             return $this->sendError($e->getMessage());
         }
-        return $this->sendResponse($order->toArray(), __('lang.saved_successfully', ['operator' => __('lang.order')]));
+
+        $appointment = DB::table('employee_appointments')->find($input['hint']);
+        if ($appointment) {
+            $employeeInformation = DB::table('users')->find($appointment->employee_id);
+            if ($employeeInformation) {
+                $order->employee_appointment_during = $order->employee_appointment_during .' : '.$employeeInformation->name;
+            }
+             DB::table('orders')->where('id', $order->id)->update(['employee_appointment_during' => $order->employee_appointment_during]);
+        }
+        return $this->sendResponse(
+            $order->toArray(), __('lang.saved_successfully', ['operator' => __('lang.order')])
+        );
     }
 
     /**
@@ -364,8 +493,8 @@ class OrderAPIController extends Controller
                                 'is_active' => 1
                             ]
                         );
-                    // $appointment = DB::table('employee_appointments')->find($request->input('hint'));
-                    // $order->employee_appointment_during = $appointment->active_day.' | '.$appointment->start_date;
+                     $appointment = DB::table('employee_appointments')->find($request->input('hint'));
+                     $order->employee_appointment_during = $appointment->active_day.' | '.$appointment->start_date;
 
                     if($request->input('market_id')) {
                         $market = DB::table('markets')->find($request->input('market_id'));
