@@ -276,18 +276,33 @@ class UserAPIController extends Controller
         if (strtotime(date("Y-m-d", strtotime($now))) > strtotime($request->input('date'))) {
             return $this->sendResponse(true, 'Өнгөрсөн цаг дээр цаг захиалах боломжгүй');
         }
+        $appointment = [];
+        if (strtotime(date("Y-m-d", strtotime($now))) == strtotime($request->input('date'))){
+            $appointment = DB::table('employee_appointments')
+                ->where('active_day', 'like', '%'.$request->input('date').'%')
+                ->where('is_active', '0')
+                ->where('employee_id', $request->input('employeeId'))
+                ->where('start_date', '>=', $nowDateTimes->format('H:i:s'))
+                ->where('active_day', '>=', $nowDateTimes->format('Y-m-d'))
+                ->where('product_id', $request->input('productId'))
+                ->get();
 
-        $appointment = DB::table('employee_appointments')
-            ->where('active_day', 'like', '%'.$request->input('date').'%')
-            ->where('is_active', '0')
-            ->where('employee_id', $request->input('employeeId'))
-            ->where('start_date', '>=', $nowDateTimes->format('H:i:s'))
-            ->where('active_day', '>=', $nowDateTimes->format('Y-m-d'))
-            ->get();
+            foreach ($appointment as $value) {
+                $value->start_date = substr($value->start_date, 0, -3);
+                $value->end_date = substr($value->end_date, 0, -3);
+            }
+        } else {
+            $appointment = DB::table('employee_appointments')
+                ->where('active_day', 'like', '%' . $request->input('date') . '%')
+                ->where('is_active', '0')
+                ->where('employee_id', $request->input('employeeId'))
+                ->where('product_id', $request->input('productId'))
+                ->get();
 
-        foreach ($appointment as $value) {
-            $value->start_date = substr($value->start_date, 0, -3);
-            $value->end_date = substr($value->end_date, 0, -3);
+            foreach ($appointment as $value) {
+                $value->start_date = substr($value->start_date, 0, -3);
+                $value->end_date = substr($value->end_date, 0, -3);
+            }
         }
         if($appointment->count() > 0) {
             return $this->sendResponse(true, $appointment);
@@ -337,6 +352,7 @@ class UserAPIController extends Controller
                         ->where([
                             ['employee_id', '=', $request->input('employeeId')],
                             ['active_day', '=', $betweenDate['activeDate']],
+                            ['product_id', '=', $request->input('productId')],
                             ['start_date', 'like', '%'.$getTime.'%']
                         ])->get();
                     array_push($tableResult, $employeeAppointment->get(0));

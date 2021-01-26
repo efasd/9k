@@ -499,7 +499,7 @@ class OrderAPIController extends Controller
                                 'is_active' => 1
                             ]);
                     }
-                     $appointment = DB::table('employee_appointments')->find($request->input('hint'));
+                    $appointment = DB::table('employee_appointments')->find($request->input('hint'));
                     if ($appointment) {
                         $order->employee_appointment_during = $appointment->active_day.' | '.$appointment->start_date;
                     }
@@ -513,9 +513,6 @@ class OrderAPIController extends Controller
                             $order->balance_min_value = $market->balance_min_value;
                         }
                     }
-//                    if ($table === 0) {
-//                        return $this->sendError('Цаг бүртгэхэд алдаа гарлааа');
-//                    }
                 }
             }
             event(new OrderChangedEvent($oldStatus, $order));
