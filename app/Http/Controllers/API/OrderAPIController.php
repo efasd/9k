@@ -191,58 +191,59 @@ class OrderAPIController extends Controller
                 );
                 $reData['lines'][0] = $line;
             }
-            $urls = [];
-            $cash = (object)[
-                'name' => 'Бэлнээр төрөл',
-                'description' => '',
-                'logo' => 'https://9000.mn/storage/app/public/282/conversions/cash-thumb.jpg',
-                'link' => ''
-            ];
-            array_push($urls, $cash);
-            $response->original['data']['urls'] = $urls;
+//            $urls = [];
+//            $cash = (object)[
+//                'name' => 'Бэлнээр төрөл',
+//                'description' => '',
+//                'logo' => 'https://9000.mn/storage/app/public/282/conversions/cash-thumb.jpg',
+//                'link' => ''
+//            ];
+//            array_push($urls, $cash);
+//            $response->original['data']['urls'] = $urls;
 
-            return $this->sendResponse($response, __('lang.saved_successfully', ['operator' => __('lang.order')]));
-//            try {
-//
-//                $client = new Client();
-//                $request = $client->request(
-//                    'POST',
-//                    env('PAYMENT_IP') . '/v2/invoice',
-//                    [
-//                        'headers' => [
-//                            'Authorization' => 'Bearer ' . $_SESSION['qpay_access_token'],
-//                            'Content-Type' => 'application/json'
-//                        ],
-//                        'body' => json_encode($reData)
-//                    ]
-//                );
-//
-//                if ($request->getStatusCode() === 200) {
-//                    $invoiceRes = json_decode($request->getBody());
-//                    $insertInvoice = DB::table('invoice')
-//                        ->updateOrInsert(
-//                            [
-//                                'user_id' => $response->getData()->data->user->id,
-//                                'order_id' => $response->getData()->data->id
-//                            ],
-//                            [
-//                                'user_id' => $response->getData()->data->user->id,
-//                                'order_id' => $response->getData()->data->id,
-//                                'active' => true,
-//                                'accepted' => false,
-//                                'invoice_id' => $invoiceRes->invoice_id,
-//                                'qr_text' => $invoiceRes->qr_text,
-//                                'start_date' => new DateTime('NOW')
-//                            ]
-//                        );
-//                    $response->original['data']['urls'] = $invoiceRes->urls;
-//
-//                    return $this->sendResponse($response, __('lang.saved_successfully', ['operator' => __('lang.order')]));
-//                }
-//                return $this->sendError('Зарлагын хүсэлт үүсгэж чадсангүй', 500);
-//            } catch (RequestException $e) {
-//                return $this->sendError($e->getMessage(), 500);
-//            }
+//            return $this->sendResponse($response, __('lang.saved_successfully', ['operator' => __('lang.order')]));
+            try {
+
+                $client = new Client();
+                $request = $client->request(
+                    'POST',
+                    env('PAYMENT_IP') . '/v2/invoice',
+                    [
+                        'headers' => [
+                            'Authorization' => 'Bearer ' . $_SESSION['qpay_access_token'],
+                            'Content-Type' => 'application/json'
+                        ],
+                        'body' => json_encode($reData)
+                    ]
+                );
+
+                if ($request->getStatusCode() === 200) {
+                    $invoiceRes = json_decode($request->getBody());
+                    // dd( $response->getData()->data->user->id);
+                    $insertInvoice = DB::table('invoice')
+                        ->updateOrInsert(
+                            [
+                                'user_id' => $response->getData()->data->user->id,
+                                'order_id' => $response->getData()->data->id
+                            ],
+                            [
+                                'user_id' => $response->getData()->data->user->id,
+                                'order_id' => $response->getData()->data->id,
+                                'active' => true,
+                                'accepted' => false,
+                                'invoice_id' => $invoiceRes->invoice_id,
+                                'qr_text' => $invoiceRes->qr_text,
+                                'start_date' => new DateTime('NOW')
+                            ]
+                        );
+                    $response->original['data']['urls'] = $invoiceRes->urls;
+
+                    return $this->sendResponse($response, __('lang.saved_successfully', ['operator' => __('lang.order')]));
+                }
+                return $this->sendError('Зарлагын хүсэлт үүсгэж чадсангүй', 500);
+            } catch (RequestException $e) {
+                return $this->sendError($e->getMessage(), 500);
+            }
         }
     }
 
@@ -452,9 +453,11 @@ class OrderAPIController extends Controller
         if ($appointment) {
             $employeeInformation = DB::table('users')->find($appointment->employee_id);
             if ($employeeInformation) {
-                $order->employee_appointment_during = $order->employee_appointment_during .' : '.$employeeInformation->name;
+                if ($order->employee_appointment_during && count(explode('|', $order->employee_appointment_during)) <= 3) {
+                    $order->employee_appointment_during = $appointment->active_day.' | '.$appointment->start_date .' | '.$employeeInformation->name;
+                }
             }
-             DB::table('orders')->where('id', $order->id)->update(['employee_appointment_during' => $order->employee_appointment_during]);
+            DB::table('orders')->where('id', $order->id)->update(['employee_appointment_during' => $order->employee_appointment_during]);
         }
         return $this->sendResponse(
             $order->toArray(), __('lang.saved_successfully', ['operator' => __('lang.order')])
@@ -500,8 +503,11 @@ class OrderAPIController extends Controller
                             ]);
                     }
                     $appointment = DB::table('employee_appointments')->find($request->input('hint'));
-                    if ($appointment) {
-                        $order->employee_appointment_during = $appointment->active_day.' | '.$appointment->start_date;
+                    $employeeInformation = DB::table('users')->find($appointment->employee_id);
+                    if ($employeeInformation) {
+                        if ($order->employee_appointment_during && count(explode('|', $order->employee_appointment_during)) <= 3) {
+                            $order->employee_appointment_during = $appointment->active_day.' | '.$appointment->start_date .' | '.$employeeInformation->name;
+                        }
                     }
 
                     if($request->input('market_id')) {
