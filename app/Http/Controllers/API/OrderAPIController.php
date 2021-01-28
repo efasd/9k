@@ -485,16 +485,24 @@ class OrderAPIController extends Controller
                 $this->paymentRepository->update(['status' => 'Paid'], $order['payment_id']);
 
                 if ($request->input('hint') !== null) {
-                    $table = DB::table('employee_appointments')
-                        ->where('id', $request->input('hint'))
-                        ->update(
-                            [
+
+                    $selectedAppointment = DB::table('employee_appointments')
+                        ->find($request->input('hint'));
+                    if ($selectedAppointment) {
+                        DB::table('employee_appointments')
+                            ->where('employee_id', $selectedAppointment->employee_id)
+                            ->where('active_day', $selectedAppointment->active_day)
+                            ->where('start_date', $selectedAppointment->start_date)
+                            ->where('end_date', $selectedAppointment->end_date)
+                            ->update([
                                 'user_id' => $order->user_id,
                                 'is_active' => 1
-                            ]
-                        );
-                     $appointment = DB::table('employee_appointments')->find($request->input('hint'));
-                     $order->employee_appointment_during = $appointment->active_day.' | '.$appointment->start_date;
+                            ]);
+                    }
+                    $appointment = DB::table('employee_appointments')->find($request->input('hint'));
+                    if ($appointment) {
+                        $order->employee_appointment_during = $appointment->active_day.' | '.$appointment->start_date;
+                    }
 
                     if($request->input('market_id')) {
                         $market = DB::table('markets')->find($request->input('market_id'));
@@ -504,9 +512,6 @@ class OrderAPIController extends Controller
                             $order->name_of_bank = $market->name_of_bank;
                             $order->balance_min_value = $market->balance_min_value;
                         }
-                    }
-                    if ($table === 0) {
-                        return $this->sendError('Цаг бүртгэхэд алдаа гарлааа');
                     }
                 }
             }
