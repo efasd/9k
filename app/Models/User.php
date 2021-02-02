@@ -153,6 +153,21 @@ class User extends Authenticatable implements HasMedia
         return $this->morphMany('App\Models\CustomFieldValue', 'customizable');
     }
 
+    public function getCustomActiveJobDays()
+    {
+        $array = $this->activeJobDaysValues()
+            ->join('users', 'users.id', '=', 'active_job_days.employee_id')
+            ->select(['day', 'active'])
+            ->get()->toArray();
+
+        return convertToAssoc($array, 'name');
+    }
+
+    public function activeJobDaysValues()
+    {
+        return $this->morphMany('App\Models\ActiveJobDays', 'activeJobDaysMorph');
+    }
+
     /**
      * Add Media to api results
      * @return bool
