@@ -29,6 +29,9 @@ class OrderRepository extends BaseRepository
         'employee_appointment_during',
         'active',
         'driver_id',
+        'coupon_id',
+        'coupon_name',
+        'coupon_price',
     ];
 
     /**

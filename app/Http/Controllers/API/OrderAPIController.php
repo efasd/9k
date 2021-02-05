@@ -422,7 +422,7 @@ class OrderAPIController extends Controller
         $amount = 0;
         try {
             $order = $this->orderRepository->create(
-                $request->only('user_id', 'order_status_id', 'tax', 'delivery_address_id', 'delivery_fee', 'hint', 'employee_appointment_during')
+                $request->only('user_id', 'order_status_id', 'tax', 'delivery_address_id', 'delivery_fee', 'hint', 'employee_appointment_during', 'coupon_id', 'coupon_name', 'coupon_price')
             );
             Log::info($input['products']);
             foreach ($input['products'] as $productOrder) {
