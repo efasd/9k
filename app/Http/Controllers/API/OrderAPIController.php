@@ -37,6 +37,7 @@ use InfyOm\Generator\Criteria\LimitOffsetCriteria;
 use Prettus\Repository\Criteria\RequestCriteria;
 use Prettus\Repository\Exceptions\RepositoryException;
 use Prettus\Validator\Exceptions\ValidatorException;
+use stdClass;
 use Stripe\Token;
 use GuzzleHttp\Exception\RequestException;
 
@@ -148,106 +149,114 @@ class OrderAPIController extends Controller
                 return $this->stripPayment($request);
             } else {
                 $this->paymentAuthAPIRepo->token();
-
                 $response = $this->cashPayment($request);
 
-                $order = DB::table('product_orders')
-                    ->where('order_id', $response->getData()->data->id)
-                    ->get();
-
-                if ($order->count() === 0) {
-                    return $this->sendError('Захилга олдсонгүй');
+                $res = $this->setQPayPayment($response);
+                if ($res->success) {
+                    return $this->sendResponse($res, __('lang.saved_successfully', ['operator' => __('lang.order')]));
+                } else {
+                    error_log($res->message);
+                    return $this->sendError($res->message, 500);
                 }
-
-                $totalAmount = 0.0;
-                for($i=0; $i < $order->count(); $i++) {
-                    $totalAmount += $order[$i]->price;
-                }
-
-                $market = DB::table('markets')
-                    ->find($response->getData()->data->product_orders[0]->product->market->id);
-
-                if(!$market) {
-                    return $this->sendError('Салбарын мэдээлэл байхгүй байна');
-                }
-
-                $line = array (
-                    "line_description" => $response->getData()->data->id . '',
-                    "line_quantity" => "1.00",
-                    "line_unit_price" => $totalAmount,
-                    "discounts" => [],
-                    "surcharges" => [],
-                    "taxes" => []
-                );
-
-                $test = (object) array();
-                $reData = array(
-                    "invoice_code" => "DULGUUN_INVOICE",
-                    "sender_invoice_no" => $this->makeSenderInvoiceNo(),
-                    "sender_branch_code" => $market->id.'',
-                    "invoice_receiver_code" => "terminal",
-                    "invoice_receiver_data" => $test,
-                    "invoice_description" => $response->getData()->data->id . '',
-                    "lines" => []
-                );
-                $reData['lines'][0] = $line;
-            }
-//            $urls = [];
-//            $cash = (object)[
-//                'name' => 'Бэлнээр төрөл',
-//                'description' => '',
-//                'logo' => 'https://9000.mn/storage/app/public/282/conversions/cash-thumb.jpg',
-//                'link' => ''
-//            ];
-//            array_push($urls, $cash);
-//            $response->original['data']['urls'] = $urls;
-
-//            return $this->sendResponse($response, __('lang.saved_successfully', ['operator' => __('lang.order')]));
-            try {
-
-                $client = new Client();
-                $request = $client->request(
-                    'POST',
-                    env('PAYMENT_IP') . '/v2/invoice',
-                    [
-                        'headers' => [
-                            'Authorization' => 'Bearer ' . $_SESSION['qpay_access_token'],
-                            'Content-Type' => 'application/json'
-                        ],
-                        'body' => json_encode($reData)
-                    ]
-                );
-
-                if ($request->getStatusCode() === 200) {
-                    $invoiceRes = json_decode($request->getBody());
-                    // dd( $response->getData()->data->user->id);
-                    $insertInvoice = DB::table('invoice')
-                        ->updateOrInsert(
-                            [
-                                'user_id' => $response->getData()->data->user->id,
-                                'order_id' => $response->getData()->data->id
-                            ],
-                            [
-                                'user_id' => $response->getData()->data->user->id,
-                                'order_id' => $response->getData()->data->id,
-                                'active' => true,
-                                'accepted' => false,
-                                'invoice_id' => $invoiceRes->invoice_id,
-                                'qr_text' => $invoiceRes->qr_text,
-                                'start_date' => new DateTime('NOW')
-                            ]
-                        );
-                    $response->original['data']['urls'] = $invoiceRes->urls;
-
-                    return $this->sendResponse($response, __('lang.saved_successfully', ['operator' => __('lang.order')]));
-                }
-                return $this->sendError('Зарлагын хүсэлт үүсгэж чадсангүй', 500);
-            } catch (RequestException $e) {
-                return $this->sendError($e->getMessage(), 500);
             }
         }
     }
 
+    private function setQPayPayment($response) {
+        $order = DB::table('product_orders')
+            ->where('order_id', $response->getData()->data->id)
+            ->get();
+
+        if ($order->count() === 0) {
+            return $this->sendError('Захилга олдсонгүй');
+        }
+
+        $totalAmount = 0.0;
+        for($i=0; $i < $order->count(); $i++) {
+            $totalAmount += $order[$i]->price;
+        }
+
+        $market = DB::table('markets')
+            ->find($response->getData()->data->product_orders[0]->product->market->id);
+
+        if(!$market) {
+            return $this->sendError('Салбарын мэдээлэл байхгүй байна');
+        }
+
+        $line = array (
+            "line_description" => $response->getData()->data->id . '',
+            "line_quantity" => "1.00",
+            "line_unit_price" => $totalAmount,
+            "discounts" => [],
+            "surcharges" => [],
+            "taxes" => []
+        );
+
+        error_log('url : '.env('9000IP').'/api/payment/invoice/qpay-check/'.$response->getData()->data->id);
+
+        $test = (object) array();
+        $reData = array(
+            "invoice_code" => "DULGUUN_INVOICE",
+            "sender_invoice_no" => $this->makeSenderInvoiceNo(),
+            "sender_branch_code" => $market->id.'',
+            "invoice_receiver_code" => "terminal",
+            "invoice_receiver_data" => $test,
+            "invoice_description" => $response->getData()->data->id . '',
+            "callback_url" => env('9000IP').'/api/payment/invoice/qpay-check/'.$response->getData()->data->id,
+            "lines" => []
+        );
+        $reData['lines'][0] = $line;
+        try {
+
+            $client = new Client();
+            $request = $client->request(
+                'POST',
+                env('PAYMENT_IP') . '/v2/invoice',
+                [
+                    'headers' => [
+                        'Authorization' => 'Bearer ' . $_SESSION['qpay_access_token'],
+                        'Content-Type' => 'application/json'
+                    ],
+                    'body' => json_encode($reData)
+                ]
+            );
+
+            if ($request->getStatusCode() === 200) {
+                $invoiceRes = json_decode($request->getBody());
+                error_log(json_encode($request));
+                $insertInvoice = DB::table('invoice')
+                    ->updateOrInsert(
+                        [
+                            'user_id' => $response->getData()->data->user->id,
+                            'order_id' => $response->getData()->data->id
+                        ],
+                        [
+                            'user_id' => $response->getData()->data->user->id,
+                            'order_id' => $response->getData()->data->id,
+                            'active' => true,
+                            'accepted' => false,
+                            'invoice_id' => $invoiceRes->invoice_id,
+                            'qr_text' => $invoiceRes->qr_text,
+                            'start_date' => new DateTime('NOW')
+                        ]
+                    );
+                $response->original['data']['urls'] = $invoiceRes->urls;
+                $result = new stdClass();
+                $result->message = $response;
+                $result->success = true;
+                return $result;
+            }
+            $result = new stdClass();
+            $result->message = 'Захиалга үүсгэж чадсангүй';
+            $result->success = false;
+            return $result;
+        } catch (RequestException $e) {
+            $result = new stdClass();
+            $result->message =  $e->getMessage();
+            $result->success = false;
+            return $result;
+        }
+    }
 
     private function getOrderListener() {
         $now = new DateTime('NOW');
@@ -402,7 +411,6 @@ class OrderAPIController extends Controller
                 $this->orderRepository->update(['payment_id' => $payment->id], $order->id);
 
                 $this->cartRepository->deleteWhere(['user_id' => $order->user_id]);
-
                 Notification::send($order->productOrders[0]->product->market->users, new NewOrder($order));
             }
         } catch (ValidatorException $e) {

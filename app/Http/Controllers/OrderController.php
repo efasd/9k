@@ -217,10 +217,15 @@ class OrderController extends Controller
         $customFields = $this->customFieldRepository->findByField('custom_field_model', $this->orderRepository->model());
         try {
 
+            error_log('json_encode($input)');
+            error_log(json_encode($input));
             $order = $this->orderRepository->update($input, $id);
 
             if (setting('enable_notifications', false)) {
                 if (isset($input['order_status_id']) && $input['order_status_id'] != $oldOrder->order_status_id) {
+                    error_log(json_encode($order));
+                    error_log(json_encode($order->user_id));
+                    error_log(json_encode($order->user));
                     Notification::send([$order->user], new StatusChangedOrder($order));
                 }
 
