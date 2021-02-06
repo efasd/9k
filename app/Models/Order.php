@@ -48,7 +48,10 @@ class Order extends Model
         'active',
         'driver_id',
         'employee_appointment_id',
-        'employee_appointment_during'
+        'employee_appointment_during',
+        'coupon_id',
+        'coupon_name',
+        'coupon_price'
     ];
 
     /**
@@ -68,7 +71,10 @@ class Order extends Model
         'active'=>'boolean',
         'driver_id' => 'integer',
         'employee_appointment_id' => 'integer',
-        'employee_appointment_during'=> 'string'
+        'employee_appointment_during'=> 'string',
+        'coupon_id'=> 'integer',
+        'coupon_name'=> 'string',
+        'coupon_price'=> 'string'
     ];
 
     /**

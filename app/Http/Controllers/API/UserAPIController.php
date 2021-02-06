@@ -269,7 +269,7 @@ class UserAPIController extends Controller
             ->where('market_id', $request->input('marketId'))
             ->get();
 
-        if($employeeCheck->count() === 0) {
+        if(count($employeeCheck) === 0) {
             return $this->sendError('Ажилтан салбар дээр бүртгэлгүй байна', 500);
         }
         $now = date("Y-m-d H:i:s");
@@ -277,36 +277,59 @@ class UserAPIController extends Controller
             return $this->sendResponse(true, 'Өнгөрсөн цаг дээр цаг захиалах боломжгүй');
         }
         $appointment = [];
-        if (strtotime(date("Y-m-d", strtotime($now))) == strtotime($request->input('date'))){
-            $appointment = DB::table('employee_appointments')
-                ->where('active_day', 'like', '%'.$request->input('date').'%')
-                ->where('is_active', '0')
-                ->where('employee_id', $request->input('employeeId'))
-                ->where('start_date', '>=', $nowDateTimes->format('H:i:s'))
-                ->where('active_day', '>=', $nowDateTimes->format('Y-m-d'))
-                ->where('product_id', $request->input('productId'))
-                ->get();
+        $numberOfWeek = new DateTime($request->input('date'));
 
-            foreach ($appointment as $value) {
-                $value->start_date = substr($value->start_date, 0, -3);
-                $value->end_date = substr($value->end_date, 0, -3);
+        $acceptedActiveDay = true;
+        $isEmployeeRegisterActiveDay = DB::table('active_job_days')
+            ->where('employee_id', $request->input('employeeId'))
+            ->get();
+        if (count($isEmployeeRegisterActiveDay) > 0) {
+            $acceptedActiveDay = false;
+            $employeeActiveDays = DB::table('active_job_days')
+                ->where('employee_id', $request->input('employeeId'))
+                ->where('day', ($numberOfWeek->format("w") - 1))
+                ->where('active', 1)
+                ->get();
+            if (count($employeeActiveDays) > 0) {
+                $acceptedActiveDay = true;
+            }
+        }
+        if (strtotime(date("Y-m-d", strtotime($now))) == strtotime($request->input('date'))){
+            if ($acceptedActiveDay) {
+                $appointment = DB::table('employee_appointments')
+                    ->where('active_day', 'like', '%'.$request->input('date').'%')
+                    ->where('is_active', '0')
+                    ->where('employee_id', $request->input('employeeId'))
+                    ->where('start_date', '>=', $nowDateTimes->format('H:i:s'))
+                    ->where('active_day', '>=', $nowDateTimes->format('Y-m-d'))
+                    ->where('product_id', $request->input('productId'))
+                    ->get();
+
+                foreach ($appointment as $value) {
+                    $value->start_date = substr($value->start_date, 0, -3);
+                    $value->end_date = substr($value->end_date, 0, -3);
+                }
             }
         } else {
-            $appointment = DB::table('employee_appointments')
+            if ($acceptedActiveDay) {
+                $appointment = DB::table('employee_appointments')
                 ->where('active_day', 'like', '%' . $request->input('date') . '%')
                 ->where('is_active', '0')
                 ->where('employee_id', $request->input('employeeId'))
                 ->where('product_id', $request->input('productId'))
                 ->get();
-
-            foreach ($appointment as $value) {
-                $value->start_date = substr($value->start_date, 0, -3);
-                $value->end_date = substr($value->end_date, 0, -3);
+                foreach ($appointment as $value) {
+                    $value->start_date = substr($value->start_date, 0, -3);
+                    $value->end_date = substr($value->end_date, 0, -3);
+                }
             }
         }
-        if($appointment->count() > 0) {
+        if(count($appointment) > 0) {
             return $this->sendResponse(true, $appointment);
         } else {
+            if (!$acceptedActiveDay) {
+                return $this->sendResponse(true, 'Тухайн ажилтаны ажлын өдөр биш байна');
+            }
 
             $startDate = date_time_set(date_create($request->input('date')), date('H', strtotime($market->start_date)), date('i', strtotime($market->start_date)));
             $endDate = date_time_set(date_create($request->input('date')), date('H', strtotime($market->end_date)), date('i', strtotime($market->end_date)));

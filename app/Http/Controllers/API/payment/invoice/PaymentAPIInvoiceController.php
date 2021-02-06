@@ -59,4 +59,18 @@ class PaymentAPIInvoiceController extends Controller {
         }
         return $this->sendError('Хүсэлтыг авж чадсангүй', 500);
     }
+
+    public function qpaySuccess(Request $request) {
+        $input = $request->all();
+        if(isset($input['object_id'])){
+            $invoice = DB::table('invoice')->where('invoice_id', $input['object_id'])->first();
+            if($invoice){
+
+                DB::table('orders')->where('id', $invoice->order_id)->update(['order_status_id' => 5]);
+
+                return $this->sendResponse(true, 'Invoice updated successfully');
+            }
+        }
+        return $this->sendError('Хүсэлтийн утга байхгүй байна', '500');
+    }
 }

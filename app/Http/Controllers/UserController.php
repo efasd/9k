@@ -23,7 +23,7 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Response;
 use Prettus\Validator\Exceptions\ValidatorException;
-use DB;
+use Illuminate\Support\Facades\DB;
 use DateTime;
 
 class UserController extends Controller
@@ -201,8 +201,16 @@ class UserController extends Controller
         $html = false;
         $role = $this->roleRepository->pluck('name', 'name');
         $rolesSelected = $user->getRoleNames()->toArray();
+
+
+        /* check active days */
+        $activeDays = ['1', '2', '3', '4', '5', '6', '7'];
+        $activeDaysSelected = $this->getEmployeeActiveJobDays($id);
+
         $customFieldsValues = $user->customFieldsValues()->with('customField')->get();
+
         $customFields = $this->customFieldRepository->findByField('custom_field_model', $this->userRepository->model());
+
         $hasCustomField = in_array($this->userRepository->model(), setting('custom_field_models', []));
         if ($hasCustomField) {
             $html = generateCustomField($customFields, $customFieldsValues);
@@ -215,8 +223,25 @@ class UserController extends Controller
         }
         return view('settings.users.edit')
             ->with('user', $user)->with("role", $role)
+            ->with('user', $user)->with("activeDays", $activeDays)
             ->with("rolesSelected", $rolesSelected)
+            ->with("activeDaysSelected", $activeDaysSelected)
             ->with("customFields", $html);
+    }
+
+    private function getEmployeeActiveJobDays($userId) {
+        $employee = DB::table('users')->find($userId);
+        if ($employee) {
+            $activeDays = DB::table('active_job_days')
+                ->where('employee_id', $employee->id)
+                ->where('active', true)->get();
+            $reData = [];
+            foreach ($activeDays as $day) {
+                array_push($reData, $day->day);
+            }
+            return $reData;
+        }
+        return null;
     }
 
     /**
@@ -250,10 +275,45 @@ class UserController extends Controller
         } else {
             $input['roles'] = isset($input['roles']) ? $input['roles'] : [];
         }
+        error_log(json_encode($input['activeJobDays']));
+        foreach ($input['activeJobDays'] as $activeJobDay) {
+            if ($activeJobDay >= 0 && $activeJobDay < 7) {
+                DB::table('active_job_days')
+                    ->updateOrInsert(
+                        [
+                            'employee_id' => $id,
+                            'day' => $activeJobDay
+                        ],
+                        [
+                            'active' => true,
+                            'created_at' => new DateTime('NOW')
+                        ]
+                    );
+            }
+        }
+        for($i = 0; $i < 7; $i++) {
+            $found = false;
+            foreach ($input['activeJobDays'] as $activeJobDay) {
+                error_log($i. ' : '.$activeJobDay);
+                if ($i == $activeJobDay) {
+                    $found = true;
+                }
+            }
+            if (!$found) {
+                DB::table('active_job_days')
+                    ->updateOrInsert(
+                        [
+                            'employee_id' => $id,
+                            'day' => $i
+                        ],
+                        [
+                            'active' => false,
+                            'updated_at' => new DateTime('NOW')
+                        ]
+                    );
+            }
+        }
 
-//        if ($input['appointment_start'] && $input['appointment_end'] && $input['user_appointment_duration']) {
-//            $this->setAppointment($input, $id);
-//        }
         if (empty($input['password'])) {
             unset($input['password']);
         } else {
