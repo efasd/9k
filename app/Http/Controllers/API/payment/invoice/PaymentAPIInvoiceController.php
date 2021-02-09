@@ -107,8 +107,11 @@ class PaymentAPIInvoiceController extends Controller {
                     if (empty($oldOrder)) {
                         return $this->sendError('Order not found');
                     }
+                    DB::table('employee_appointments')
+                        ->where('id', $order->hint)
+                        ->update(['is_active' => 1]);
                     try {
-                        $order->order_status_id = 5;
+                        $order->order_status_id = 3;
                         $order = $this->orderRepository->update((array)$order, $order->id);
                         if (setting('enable_notifications', false)) {
                             Notification::send([$order->user], new StatusChangedOrder($order));
