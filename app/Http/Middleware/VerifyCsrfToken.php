@@ -22,6 +22,7 @@ class VerifyCsrfToken extends Middleware
     protected $except = [
         'install/*',
         'update/*',
-        'payments/razorpay/*'
+        'payments/razorpay/*',
+        'api/payment/invoice/qpay-check/*'
     ];
 }

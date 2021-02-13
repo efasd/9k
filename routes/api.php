@@ -74,7 +74,7 @@ Route::prefix('payment')->group(function () {
        Route::post('create-simple', 'API\payment\invoice\PaymentAPIInvoiceController@createSimple');
        Route::get('get/{invoiceId}', 'API\payment\invoice\PaymentAPIInvoiceController@get');
        Route::delete('cancel/{invoiceId}', 'API\payment\invoice\PaymentAPIInvoiceController@cancel');
-       Route::post('qpay-return', 'API\payment\invoice\PaymentAPIInvoiceController@qpaySuccess');
+       Route::get('qpay-check/{orderId}', 'API\payment\invoice\PaymentAPIInvoiceController@qPayChecker');
    });
    Route::prefix('payment')->group(function() {
        Route::get('get/{invoiceId}', 'API\payment\payment\PaymentAPIController@get');
