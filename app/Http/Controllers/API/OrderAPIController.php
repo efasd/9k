@@ -147,16 +147,21 @@ class OrderAPIController extends Controller
         if (isset($payment['payment']) && $payment['payment']['method']) {
             if ($payment['payment']['method'] == "Credit Card (Stripe Gateway)") {
                 return $this->stripPayment($request);
-            } else {
+            } else if ($payment['payment']['method'] === "qpay") {
                 $this->paymentAuthAPIRepo->token();
                 $response = $this->cashPayment($request);
 
                 $res = $this->setQPayPayment($response);
                 if ($res->success) {
-                    return $this->sendResponse($res, __('lang.saved_successfully', ['operator' => __('lang.order')]));
+                    return $this->sendResponse($res->message, __('lang.saved_successfully', ['operator' => __('lang.order')]));
                 } else {
                     error_log($res->message);
                     return $this->sendError($res->message, 500);
+                }
+            } else {
+                $response = $this->cashPayment($request);
+                if ($response) {
+                    return $this->sendResponse($response, __('lang.saved_successfully', ['operator' => __('lang.order')]));
                 }
             }
         }
