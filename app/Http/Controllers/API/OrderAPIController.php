@@ -157,12 +157,11 @@ class OrderAPIController extends Controller
                     error_log($res->message);
                     return $this->sendError($res->message, 500);
                 }
-            } else {
-                $response = $this->cashPayment($request);
-                if ($response) {
-                    return $this->sendResponse($response, __('lang.saved_successfully', ['operator' => __('lang.order')]));
-                }
             }
+        }
+        $response = $this->cashPayment($request);
+        if ($response) {
+            return $this->sendResponse($response, __('lang.saved_successfully', ['operator' => __('lang.order')]));
         }
     }
 
@@ -195,9 +194,6 @@ class OrderAPIController extends Controller
             "surcharges" => [],
             "taxes" => []
         );
-
-        error_log('url : '.env('9000IP').'/api/payment/invoice/qpay-check/'.$response->getData()->data->id);
-
         $test = (object) array();
         $reData = array(
             "invoice_code" => "DULGUUN_INVOICE",
@@ -205,7 +201,7 @@ class OrderAPIController extends Controller
             "sender_branch_code" => $market->id.'',
             "invoice_receiver_code" => "terminal",
             "invoice_receiver_data" => $test,
-            "invoice_description" => $response->getData()->data->id . '',
+            "invoice_description" => "Захиалгын дугаар ".$response->getData()->data->id . '',
             "callback_url" => env('9000IP').'/api/payment/invoice/qpay-check/'.$response->getData()->data->id,
             "lines" => []
         );
