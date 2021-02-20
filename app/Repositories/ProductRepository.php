@@ -42,7 +42,10 @@ class ProductRepository extends BaseRepository implements CacheableInterface
         'featured',
         'market_id',
         'employee_id',
-        'category_id'
+        'category_id',
+        'discount_start_date',
+        'discount_end_date',
+        'discount_percent'
     ];
 
     /**

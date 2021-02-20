@@ -70,7 +70,12 @@ class Product extends Model implements HasMedia
         'deliverable',
         'appointment',
         'market_id',
-        'category_id'
+        'category_id',
+        'discount_start_date',
+        'discount_end_date',
+        'discount_percent',
+        'type',
+        'status'
     ];
     /**
      * The attributes that should be casted to native types.
@@ -90,7 +95,13 @@ class Product extends Model implements HasMedia
         'deliverable' => 'boolean',
         'appointment' => 'boolean',
         'market_id' => 'integer',
-        'category_id' => 'double'
+        'category_id' => 'double',
+        'discount_start_date' => 'time',
+        'discount_end_date' => 'time',
+        'discount_percent' => 'integer',
+        'type' => 'enum',
+        'status' => 'enum',
+
     ];
     /**
      * New Attributes

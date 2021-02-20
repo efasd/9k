@@ -275,7 +275,6 @@ class UserController extends Controller
         } else {
             $input['roles'] = isset($input['roles']) ? $input['roles'] : [];
         }
-        error_log(json_encode($input['activeJobDays']));
         foreach ($input['activeJobDays'] as $activeJobDay) {
             if ($activeJobDay >= 0 && $activeJobDay < 7) {
                 DB::table('active_job_days')
@@ -341,7 +340,6 @@ class UserController extends Controller
         } catch (ValidatorException $e) {
             Flash::error($e->getMessage());
         }
-
 
         Flash::success('User updated successfully.');
 

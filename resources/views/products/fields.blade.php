@@ -203,7 +203,37 @@
     </div>
 {{--    @endif--}}
 
+    {{-- discount start date --}}
+    <div class="form-group row">
+        {!! Form::label('discount_start_date', trans("lang.discount_start_date_text"), ['class' => 'col-3 control-label text-right']) !!}
+        <div class="col-9">
+            {!! Form::time('discount_start_date', '',  ['class' => 'form-control','placeholder'=>  trans("lang.discount_start_date")]) !!}
+            <div class="form-text text-muted">
+                {{ trans("lang.discount_start_date_help") }}
+            </div>
+        </div>
+    </div>
+    {{-- discount end date --}}
+    <div class="form-group row">
+        {!! Form::label('discount_end_date', trans("lang.discount_end_date_text"), ['class' => 'col-3 control-label text-right']) !!}
+        <div class="col-9">
+            {!! Form::time('discount_end_date', '',  ['class' => 'form-control','placeholder'=>  trans("lang.discount_end_date_text")]) !!}
+            <div class="form-text text-muted">
+                {{ trans("lang.discount_end_date_help") }}
+            </div>
+        </div>
+    </div>
 
+    {{-- discount persent date --}}
+    <div class="form-group row">
+        {!! Form::label('discount_percent', trans("lang.discount_percent_text"), ['class' => 'col-3 control-label text-right']) !!}
+        <div class="col-9">
+            {!! Form::number('discount_percent', null,  ['class' => 'form-control','placeholder'=>  trans("lang.discount_percent_text")]) !!}
+            <div class="form-text text-muted">
+                {{ trans("lang.discount_percent_help") }}
+            </div>
+        </div>
+    </div>
 </div>
 @if($customFields)
     <div class="clearfix"></div>
