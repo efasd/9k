@@ -283,6 +283,7 @@ class UserAPIController extends Controller
         $isEmployeeRegisterActiveDay = DB::table('active_job_days')
             ->where('employee_id', $request->input('employeeId'))
             ->get();
+
         if (count($isEmployeeRegisterActiveDay) > 0) {
             $acceptedActiveDay = false;
             $employeeActiveDays = DB::table('active_job_days')
@@ -296,13 +297,20 @@ class UserAPIController extends Controller
         }
         if (strtotime(date("Y-m-d", strtotime($now))) == strtotime($request->input('date'))){
             if ($acceptedActiveDay) {
+                DB::table('employee_appointments')
+                    ->where('active_day', 'like', '%'.$request->input('date').'%')
+                    ->where('is_active', '0')
+                    ->where('employee_id', $request->input('employeeId'))
+                    ->where('start_date', '>=', $nowDateTimes->format('H:i:s'))
+                    ->where('active_day', '>=', $nowDateTimes->format('Y-m-d'))
+                    ->update(['product_id' => $request->input('productId')]);
+
                 $appointment = DB::table('employee_appointments')
                     ->where('active_day', 'like', '%'.$request->input('date').'%')
                     ->where('is_active', '0')
                     ->where('employee_id', $request->input('employeeId'))
                     ->where('start_date', '>=', $nowDateTimes->format('H:i:s'))
                     ->where('active_day', '>=', $nowDateTimes->format('Y-m-d'))
-                    ->where('product_id', $request->input('productId'))
                     ->get();
 
                 foreach ($appointment as $value) {
@@ -312,12 +320,18 @@ class UserAPIController extends Controller
             }
         } else {
             if ($acceptedActiveDay) {
+                $updated = DB::table('employee_appointments')
+                ->where('active_day', 'like', '%' . $request->input('date') . '%')
+                ->where('is_active', '0')
+                ->where('employee_id', $request->input('employeeId'))
+                ->update(['product_id' => $request->input('productId')]);
+
                 $appointment = DB::table('employee_appointments')
                 ->where('active_day', 'like', '%' . $request->input('date') . '%')
                 ->where('is_active', '0')
                 ->where('employee_id', $request->input('employeeId'))
-                ->where('product_id', $request->input('productId'))
                 ->get();
+
                 foreach ($appointment as $value) {
                     $value->start_date = substr($value->start_date, 0, -3);
                     $value->end_date = substr($value->end_date, 0, -3);
@@ -331,6 +345,13 @@ class UserAPIController extends Controller
                 return $this->sendResponse(true, 'Тухайн ажилтаны ажлын өдөр биш байна');
             }
 
+            $activeDay = new DateTime(date_create($request->input('date'))->format('Y-m-d H:i:s'));
+            $nowAddDays = new DateTime(date_create()->format('Y-m-d H:i:s'));
+            date_add($nowAddDays, date_interval_create_from_date_string('6 days'));
+            if ($nowAddDays <= $activeDay) {
+                return $this->sendResponse(true, 'Та 7 ирэх хоногын дотор захиалга үүсгэх боломжтой');
+            }
+
             $startDate = date_time_set(date_create($request->input('date')), date('H', strtotime($market->start_date)), date('i', strtotime($market->start_date)));
             $endDate = date_time_set(date_create($request->input('date')), date('H', strtotime($market->end_date)), date('i', strtotime($market->end_date)));
 
@@ -340,8 +361,6 @@ class UserAPIController extends Controller
             while($startDate < $endDate) {
                 $dates = array();
                 $nextHourMinute = date('H:i', strtotime($startDate->format('H:i')) + $market->duration_range * 60);
-
-                $activeDay = new DateTime(date_create($request->input('date'))->format('Y-m-d H:i:s'));
 
                 $startDateClone = new DateTime($startDate->format('Y-m-d H:i:s'));
                 $nextEndTime = date_time_set($startDateClone, date('H', strtotime($nextHourMinute)), date('i', strtotime($nextHourMinute)));
@@ -356,35 +375,46 @@ class UserAPIController extends Controller
             }
             $tableResult = [];
             foreach ($betweenDates as $betweenDate) {
-                $inserted = DB::table('employee_appointments')
-                    ->updateOrInsert(
-                        [
-                            'employee_id' => $request->input('employeeId'),
-                            'product_id' => $request->input('productId'),
-                            'active_day' => $betweenDate['activeDate'],
-                            'start_date' => $betweenDate['startTime']
-                        ],
-                        [
-                            'start_date' => $betweenDate['startTime'],
-                            'end_date' => $betweenDate['endDate'],
-                            'duration_date' => $market->duration_range,
-                            'employee_id' => $request->input('employeeId'),
-                            'product_id' => $request->input('productId'),
-                            'active_day' => $betweenDate['activeDate'],
-                            'created_at' => date('Y-m-d H:i:s')
-                        ]
-                    );
-                if ($inserted) {
-                    $getTime = $betweenDate['startTime']->format("H:i");
-                    $employeeAppointment = DB::table('employee_appointments')
-                        ->where([
-                            ['employee_id', '=', $request->input('employeeId')],
-                            ['active_day', '=', $betweenDate['activeDate']],
-                            ['product_id', '=', $request->input('productId')],
-                            ['start_date', 'like', '%'.$getTime.'%']
-                        ])->get();
 
-                    array_push($tableResult, $employeeAppointment->get(0));
+                $isActiveChecker = DB::table('employee_appointments')
+                    ->where([
+                        'employee_id' => $request->input('employeeId'),
+                        'active_day' => $betweenDate['activeDate'],
+                        'start_date' => $betweenDate['startTime'],
+                    ])->get();
+
+                error_log(json_encode($isActiveChecker));
+                if (count($isActiveChecker) == 0) {
+
+                    $inserted = DB::table('employee_appointments')
+                        ->updateOrInsert(
+                            [
+                                'employee_id' => $request->input('employeeId'),
+                                'product_id' => $request->input('productId'),
+                                'active_day' => $betweenDate['activeDate'],
+                                'start_date' => $betweenDate['startTime']
+                            ],
+                            [
+                                'start_date' => $betweenDate['startTime'],
+                                'end_date' => $betweenDate['endDate'],
+                                'duration_date' => $market->duration_range,
+                                'employee_id' => $request->input('employeeId'),
+                                'product_id' => $request->input('productId'),
+                                'active_day' => $betweenDate['activeDate'],
+                                'created_at' => date('Y-m-d H:i:s')
+                            ]
+                        );
+                    if ($inserted) {
+                        $getTime = $betweenDate['startTime']->format("H:i");
+                        $employeeAppointment = DB::table('employee_appointments')
+                            ->where([
+                                ['employee_id', '=', $request->input('employeeId')],
+                                ['active_day', '=', $betweenDate['activeDate']],
+                                ['product_id', '=', $request->input('productId')],
+                                ['start_date', 'like', '%'.$getTime.'%']
+                            ])->get();
+                        array_push($tableResult, $employeeAppointment->get(0));
+                    }
                 }
             }
             $alreadyFinished = true;

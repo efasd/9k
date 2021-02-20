@@ -494,7 +494,7 @@ class OrderAPIController extends Controller
         try {
             $order = $this->orderRepository->update($input, $id);
 
-            if (isset($input['order_status_id']) && $input['order_status_id'] == 5 && !empty($order)) {
+            if (isset($input['order_status_id']) && ( $input['order_status_id'] == 5 || $input['order_status_id'] == 3 ) && !empty($order)) {
                 $this->paymentRepository->update(['status' => 'Paid'], $order['payment_id']);
 
                 if ($request->input('hint') !== null) {

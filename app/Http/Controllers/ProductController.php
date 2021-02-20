@@ -153,7 +153,6 @@ class ProductController extends Controller
 
             return redirect(route('products.index'));
         }
-
         return view('products.show')->with('product', $product);
     }
 
@@ -188,7 +187,8 @@ class ProductController extends Controller
         if ($hasCustomField) {
             $html = generateCustomField($customFields, $customFieldsValues);
         }
-
+        error_log(json_encode($id));
+        error_log(json_encode($product));
         return view('products.edit')
             ->with('product', $product)
             ->with("customFields", isset($html) ? $html : false)
