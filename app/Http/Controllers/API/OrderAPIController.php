@@ -149,13 +149,13 @@ class OrderAPIController extends Controller
                 return $this->stripPayment($request);
             } else if ($payment['payment']['method'] === "qpay") {
                 $this->paymentAuthAPIRepo->token();
+
                 $response = $this->cashPayment($request);
 
                 $res = $this->setQPayPayment($response);
                 if ($res->success) {
                     return $this->sendResponse($res->message, __('lang.saved_successfully', ['operator' => __('lang.order')]));
                 } else {
-                    error_log($res->message);
                     return $this->sendError($res->message, 500);
                 }
             }
@@ -183,10 +183,10 @@ class OrderAPIController extends Controller
         $market = DB::table('markets')
             ->find($response->getData()->data->product_orders[0]->product->market->id);
 
+
         if(!$market) {
             return $this->sendError('Салбарын мэдээлэл байхгүй байна');
         }
-
         $line = array (
             "line_description" => $response->getData()->data->id . '',
             "line_quantity" => "1.00",
@@ -196,8 +196,13 @@ class OrderAPIController extends Controller
             "taxes" => []
         );
         $test = (object) array();
+
+        if (!$market->merchant_id) {
+            $market->merchant_id = 'DULGUUN_INVOICE';
+        }
+
         $reData = array(
-            "invoice_code" => "DULGUUN_INVOICE",
+            "invoice_code" => $market->merchant_id,
             "sender_invoice_no" => $this->makeSenderInvoiceNo(),
             "sender_branch_code" => $market->id.'',
             "invoice_receiver_code" => "terminal",
