@@ -73,6 +73,7 @@ class Market extends Model implements HasMedia
         'closed',
         'information',
         'active',
+        'merchant_id',
     ];
 
     /**
@@ -96,7 +97,8 @@ class Market extends Model implements HasMedia
         'available_for_delivery'=>'boolean',
         'closed'=>'boolean',
         'information' => 'string',
-        'active' =>'boolean'
+        'active' =>'boolean',
+        'merchant_id' => 'string'
     ];
 
     /**
@@ -173,7 +175,7 @@ class Market extends Model implements HasMedia
         $extension = strtolower(end($array));
         if (in_array($extension,config('medialibrary.extensions_has_thumb'))) {
             return asset($this->getFirstMediaUrlTrait($collectionName,$conversion));
-        }else{
+        } else {
             return asset(config('medialibrary.icons_folder').'/'.$extension.'.png');
         }
     }
