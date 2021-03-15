@@ -316,6 +316,8 @@ class UserAPIController extends Controller
                 foreach ($appointment as $value) {
                     $value->start_date = substr($value->start_date, 0, -3);
                     $value->end_date = substr($value->end_date, 0, -3);
+                    $discountPercent = $this->setAppointmentDiscount($request->input('productId'), $value->start_date, $request->input('date'));
+                    $value->discount_percent = $discountPercent;
                 }
             }
         } else {
@@ -335,6 +337,8 @@ class UserAPIController extends Controller
                 foreach ($appointment as $value) {
                     $value->start_date = substr($value->start_date, 0, -3);
                     $value->end_date = substr($value->end_date, 0, -3);
+                    $discountPercent = $this->setAppointmentDiscount($request->input('productId'), $value->start_date, $request->input('date'));
+                    $value->discount_percent = $discountPercent;
                 }
             }
         }
@@ -429,12 +433,32 @@ class UserAPIController extends Controller
             foreach ($tableResult as $value) {
                 $value->start_date = substr($value->start_date, 0, -3);
                 $value->end_date = substr($value->end_date, 0, -3);
+                $discountPercent = $this->setAppointmentDiscount($request->input('productId'), $value->start_date, $request->input('date'));
+                $value->discount_percent = $discountPercent;
             }
             if($tableResult !== 0) {
                 return $this->sendResponse(true, $tableResult);
             }
             return $this->sendResponse(false, 'Үүсгэж чадсангүй');
         }
+    }
+
+    private function setAppointmentDiscount($productId, $startDate, $chosenDate) {
+
+        $nowDateTimes = new DateTime($chosenDate);
+
+        $appointmentDiscount = DB::table('appointment_discount')
+            ->where('is_active', 1)
+            ->where('product_id', $productId)
+            ->where('start_date', '<=', $startDate)
+            ->where('end_date', '>=', $startDate)
+            ->where('active_day', ($nowDateTimes->format("N")))
+            ->get();
+
+        if ($appointmentDiscount && count($appointmentDiscount) > 0) {
+            return $appointmentDiscount->get(0)->discount_percent;
+        }
+        return 0;
     }
 
     /**
