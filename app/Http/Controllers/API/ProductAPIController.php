@@ -29,6 +29,8 @@ use InfyOm\Generator\Criteria\LimitOffsetCriteria;
 use Prettus\Repository\Criteria\RequestCriteria;
 use Prettus\Repository\Exceptions\RepositoryException;
 use Prettus\Validator\Exceptions\ValidatorException;
+use DB;
+use DateTime;
 /**
  * Class ProductController
  * @package App\Http\Controllers\API
@@ -83,6 +85,9 @@ class ProductAPIController extends Controller
 //            $this->productRepository->orderBy('closed');
 //            $this->productRepository->orderBy('area');
             $products = $this->productRepository->all();
+            foreach ($products as $product) {
+                $product->discount = $this->setDiscount($product->id);
+            }
 
         } catch (RepositoryException $e) {
             return $this->sendError($e->getMessage());
@@ -142,6 +147,7 @@ class ProductAPIController extends Controller
             array_push($employeeList, $employee);
         }
         $product['employees'] = $employeeList;
+        $product->discount = $this->setDiscount($product->id);
         if (empty($product)) {
             return $this->sendError('Product not found');
         }
@@ -244,5 +250,23 @@ class ProductAPIController extends Controller
          $product['employees'] = $employeeList;
          $product['appointment'] = $employeeList;
         return $product;
+    }
+
+
+
+    private function setDiscount($productId) {
+
+        $nowDateTimes = new DateTime();
+
+        $appointmentDiscount = DB::table('appointment_discount')
+            ->where('is_active', 1)
+            ->where('product_id', $productId)
+            ->where('active_day', ($nowDateTimes->format("N")))
+            ->get();
+
+        if ($appointmentDiscount && count($appointmentDiscount) > 0) {
+            return $appointmentDiscount->get(0)->discount_percent;
+        }
+        return 0;
     }
 }
