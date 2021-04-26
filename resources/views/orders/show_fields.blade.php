@@ -15,10 +15,10 @@
     <p>{!! isset($order->user->custom_fields['phone']) ? $order->user->custom_fields['phone']['view'] : "" !!}</p>
   </div>
 
-    {!! Form::label('delivery_address', trans('lang.delivery_address'), ['class' => 'col-4 control-label']) !!}
+    <!-- {!! Form::label('delivery_address', trans('lang.delivery_address'), ['class' => 'col-4 control-label']) !!}
     <div class="col-8">
     <p>{!! $order->deliveryAddress ? $order->deliveryAddress->address : '' !!}</p>
-  </div>
+  </div> -->
 
     {!! Form::label('order_date', trans('lang.order_date'), ['class' => 'col-4 control-label']) !!}
     <div class="col-8">
@@ -49,10 +49,10 @@
     <p>{!! isset($order->payment) ? $order->payment->method : ''  !!}</p>
   </div>
 
-    {!! Form::label('payment_status', trans('lang.payment_status'), ['class' => 'col-4 control-label']) !!}
+    <!-- {!! Form::label('payment_status', trans('lang.payment_status'), ['class' => 'col-4 control-label']) !!}
     <div class="col-8">
     <p>{!! isset($order->payment) ? $order->payment->status : trans('lang.order_not_paid')  !!}</p>
-  </div>
+  </div> -->
     {!! Form::label('order_updated_date', trans('lang.order_updated_at'), ['class' => 'col-4 control-label']) !!}
     <div class="col-8">
         <p>{!! $order->updated_at !!}</p>
@@ -99,7 +99,6 @@
     </div>
 
 </div>
-
 {{--<!-- Tax Field -->--}}
 {{--<div class="form-group row col-md-6 col-sm-12">--}}
 {{--  {!! Form::label('tax', 'Tax:', ['class' => 'col-4 control-label']) !!}--}}

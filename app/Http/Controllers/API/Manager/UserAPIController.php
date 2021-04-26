@@ -70,7 +70,6 @@ class UserAPIController extends Controller
         } catch (\Exception $e) {
             return $this->sendError($e->getMessage(), 401);
         }
-
     }
 
     /**
@@ -120,7 +119,6 @@ class UserAPIController extends Controller
             $this->sendError($e->getMessage(), 401);
         }
         return $this->sendResponse($user['name'], 'User logout successfully');
-
     }
 
     function user(Request $request)
@@ -137,7 +135,8 @@ class UserAPIController extends Controller
     function settings(Request $request)
     {
         $settings = setting()->all();
-        $settings = array_intersect_key($settings,
+        $settings = array_intersect_key(
+            $settings,
             [
                 'default_tax' => '',
                 'default_currency' => '',
@@ -223,7 +222,6 @@ class UserAPIController extends Controller
                 'code' => 401,
             ], 'Reset link not sent');
         }
-
     }
 
     /**
@@ -235,12 +233,11 @@ class UserAPIController extends Controller
      */
     public function driversOfMarket($id, Request $request)
     {
-        try{
+        try {
             $this->userRepository->pushCriteria(new RequestCriteria($request));
             $this->userRepository->pushCriteria(new LimitOffsetCriteria($request));
             $this->userRepository->pushCriteria(new DriversOfMarketCriteria($id));
             $users = $this->userRepository->all();
-
         } catch (RepositoryException $e) {
             return $this->sendError($e->getMessage());
         }
