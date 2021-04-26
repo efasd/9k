@@ -83,24 +83,24 @@ class OrderDataTable extends DataTable
                 'title' => trans('lang.order_order_status_id'),
 
             ],
-            [
-                'data' => 'tax',
-                'title' => trans('lang.order_tax'),
-                'searchable' => false,
+            // [
+            //     'data' => 'tax',
+            //     'title' => trans('lang.order_tax'),
+            //     'searchable' => false,
 
-            ],
-            [
-                'data' => 'delivery_fee',
-                'title' => trans('lang.order_delivery_fee'),
-                'searchable' => false,
+            // ],
+            // [
+            //     'data' => 'delivery_fee',
+            //     'title' => trans('lang.order_delivery_fee'),
+            //     'searchable' => false,
 
-            ],
-            [
-                'data' => 'payment.status',
-                'name' => 'payment.status',
-                'title' => trans('lang.payment_status'),
+            // ],
+            // [
+            //     'data' => 'payment.status',
+            //     'name' => 'payment.status',
+            //     'title' => trans('lang.payment_status'),
 
-            ],
+            // ],
             [
                 'data' => 'payment.method',
                 'name' => 'payment.method',

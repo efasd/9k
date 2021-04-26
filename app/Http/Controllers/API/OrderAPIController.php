@@ -28,7 +28,6 @@ use App\Repositories\UserRepository;
 use DateTime;
 use Flash;
 use GuzzleHttp\Client;
-use http\Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
