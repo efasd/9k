@@ -53,8 +53,6 @@ class OrderStatusController extends Controller
      */
     public function create()
     {
-        
-        
         $hasCustomField = in_array($this->orderStatusRepository->model(),setting('custom_field_models',[]));
             if($hasCustomField){
                 $customFields = $this->customFieldRepository->findByField('custom_field_model', $this->orderStatusRepository->model());
@@ -117,8 +115,6 @@ class OrderStatusController extends Controller
     public function edit($id)
     {
         $orderStatus = $this->orderStatusRepository->findWithoutFail($id);
-        
-        
 
         if (empty($orderStatus)) {
             Flash::error(__('lang.not_found',['operator' => __('lang.order_status')]));

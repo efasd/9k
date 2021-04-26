@@ -693,6 +693,7 @@ return [
     'order_order_status_id_help' => 'Insert Order Status',
     'order_order_status_id_placeholder' => 'Insert Order Status',
     'order_paid' => 'Paid',
+    'order_cal' => 'Календар',
     'order_plural' => 'Захиалга',
     'order_status' => 'Order Status',
     'order_status_create' => 'Create Order Status',

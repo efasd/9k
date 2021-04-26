@@ -1555,6 +1555,15 @@ class DemoPermissionsPermissionsTableSeeder extends Seeder
                 'updated_at' => '2020-08-13 14:58:02',
                 'deleted_at' => NULL,
             ),
+            170 =>
+            array (
+                'id' => 177,
+                'name' => 'calendar.index',
+                'guard_name' => 'web',
+                'created_at' => '2020-08-13 14:58:02',
+                'updated_at' => '2020-08-13 14:58:02',
+                'deleted_at' => NULL,
+            )
         ));
         
         

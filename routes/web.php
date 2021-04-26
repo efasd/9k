@@ -102,9 +102,11 @@ Route::middleware('auth')->group(function () {
         'show'
     ]);
 
+    Route::resource('calendar', 'OrderCalendarController');
+
     Route::resource('orderStatuses', 'OrderStatusController')->except([
         'create', 'store', 'destroy'
-    ]);;
+    ]);
 
     Route::post('products/remove-media', 'ProductController@removeMedia');
     Route::resource('products', 'ProductController')->except([

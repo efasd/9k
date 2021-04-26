@@ -100,6 +100,13 @@
     </li>
 @endcan
 
+@can('calendar.index')
+    <li class="nav-item">
+        <a class="nav-link {{ Request::is('calendar*') ? 'active' : '' }}" href="{!! route('calendar.index') !!}">
+            @if($icons)<i class="nav-icon fa fa-tasks"></i>@endif<p>{{trans('lang.order_cal')}}</p></a>
+    </li>
+@endcan
+
 @can('orders.index')
     <li class="nav-item has-treeview {{ Request::is('orders*') || Request::is('orderStatuses*') || Request::is('deliveryAddresses*')? 'menu-open' : '' }}">
         <a href="#" class="nav-link {{ Request::is('orders*') || Request::is('orderStatuses*') || Request::is('deliveryAddresses*')? 'active' : '' }}"> @if($icons)
