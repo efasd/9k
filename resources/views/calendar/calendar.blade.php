@@ -18,19 +18,33 @@
                 center: 'title',
                 right: 'month,agendaWeek,agendaDay'
             },
-            events: [
+            eventSources: [
                 {
-                    title: 'Dulguun',
-                    start: '2021-04-16T10:00:00',
-                    end: '2021-04-16T11:30:00',
-                    textColor: 'white',
-
-                },{
-                        title: 'Sra',
-                        start: '2021-04-16T11:30:00',
-                        end: '2021-04-16T13:00:00',
-                        textColor: 'white',
-
+                    url: "http://127.0.0.1:8000/api/category/getAppointment",
+                    method: 'POST',
+                    data: {
+                        startDate: "2021-01-27",
+                        marketId: "12"
+                    },
+                    success: function(res) {
+                        let reData = [];
+                        res.forEach(employeeArray => {
+                            employeeArray.forEach(employee => {
+                                let newArray = {};
+                                newArray.title = employee.userInfo.name;
+                                newArray.start = employee.active_day+'T'+employee.start_date;
+                                newArray.end = employee.active_day+'T'+employee.end_date;
+                                newArray.textColor = 'white';
+                                reData.push(newArray);
+                            });
+                        });
+                        return reData;
+                    },
+                    failure: function() {
+                        alert('there was an error while fetching events!');
+                    },
+                    color: 'blue',   // a non-ajax option
+                    textColor: 'black' // a non-ajax option
                 }
             ],
             timeFormat: 'hh:mm ',
@@ -45,15 +59,14 @@
                     var end = $.fullCalendar.formatDate(end, 'Y-MM-DD HH:mm:ss');
 
                     $.ajax({
-                        url: "/full-calender/action",
+                        url: "http://127.0.0.1:8000/api/category/getAppointment",
                         type: "POST",
                         data: {
-                            title: title,
-                            start: start,
-                            end: end,
-                            type: 'add'
+                            startDate: "2021-04-27",
+                            marketId: "12"
                         },
                         success: function(data) {
+                            console.log(data);
                             calendar.fullCalendar('refetchEvents');
                             alert("Event Created Successfully");
                         }
