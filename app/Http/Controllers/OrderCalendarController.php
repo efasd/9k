@@ -45,7 +45,7 @@ class OrderCalendarController
                 $employeeInfo = DB::table('users')->find($employee->user_id);
 
                 $employeeAppointment = DB::table('employee_appointments')
-                    ->where('is_active', 1)
+//                    ->where('is_active', 1)
                     ->where('employee_id', $employee->user_id)
                     ->where('active_day', 'like', $startDate->format('Y-m').'%')
                     ->get();
