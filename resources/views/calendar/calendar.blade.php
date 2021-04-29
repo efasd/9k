@@ -35,6 +35,11 @@
                                 newArray.start = employee.active_day+'T'+employee.start_date;
                                 newArray.end = employee.active_day+'T'+employee.end_date;
                                 newArray.textColor = 'white';
+                                if (employee.is_active === 1) {
+                                    newArray.color = 'green';
+                                } else {
+                                    newArray.color = 'gray';
+                                }
                                 reData.push(newArray);
                             });
                         });
