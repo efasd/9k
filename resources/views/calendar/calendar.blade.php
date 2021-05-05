@@ -13,46 +13,46 @@
 
         var calendar = $('#calendar').fullCalendar({
             editable: true,
+
+
             header: {
                 left: 'prev,next today',
                 center: 'title',
                 right: 'month,agendaWeek,agendaDay'
             },
-            eventSources: [
-                {
-                    url: "http://127.0.0.1:8000/api/category/getAppointment",
-                    method: 'POST',
-                    data: {
-                        startDate: "2021-01-27",
-                        marketId: "12"
-                    },
-                    success: function(res) {
-                        let reData = [];
-                        res.forEach(employeeArray => {
-                            employeeArray.forEach(employee => {
-                                let newArray = {};
-                                newArray.title = employee.userInfo.name;
-                                newArray.start = employee.active_day+'T'+employee.start_date;
-                                newArray.end = employee.active_day+'T'+employee.end_date;
-                                newArray.textColor = 'white';
-                                if (employee.is_active === 1) {
-                                    newArray.color = 'green';
-                                } else {
-                                    newArray.color = 'gray';
-                                }
-                                reData.push(newArray);
-                            });
+            eventSources: [{
+                url: "http://127.0.0.1:8000/api/category/getAppointment",
+                method: 'POST',
+                data: {
+                    startDate: "2021-01-27",
+                    marketId: "12"
+                },
+                success: function(res) {
+                    let reData = [];
+                    res.forEach(employeeArray => {
+                        employeeArray.forEach(employee => {
+                            let newArray = {};
+                            newArray.title = employee.userInfo.name;
+                            newArray.start = employee.active_day + 'T' + employee.start_date;
+                            newArray.end = employee.active_day + 'T' + employee.end_date;
+                            newArray.textColor = 'white';
+                            if (employee.is_active === 1) {
+                                newArray.color = 'green';
+                            } else {
+                                newArray.color = 'gray';
+                            }
+                            reData.push(newArray);
                         });
-                        return reData;
-                    },
-                    failure: function() {
-                        alert('there was an error while fetching events!');
-                    },
-                    color: 'blue',   // a non-ajax option
-                    textColor: 'black' // a non-ajax option
-                }
-            ],
-            timeFormat: 'hh:mm ',
+                    });
+                    return reData;
+                },
+                failure: function() {
+                    alert('there was an error while fetching events!');
+                },
+                color: 'blue', // a non-ajax option
+                textColor: 'black'
+            }],
+            timeFormat: 'H(:mm)',
             selectable: true,
             selectHelper: true,
             select: function(start, end, allDay) {
