@@ -98,7 +98,6 @@ class ProductController extends Controller
         $employeesSelected = [];
         $employees = $this->userRepository->getByCriteria(new EmployeesCriteria())->pluck('name', 'id');
 
-
         return view('products.create')
             ->with("customFields", isset($html) ? $html : false)
             ->with("market", $market)

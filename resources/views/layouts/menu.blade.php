@@ -107,6 +107,13 @@
     </li>
 @endcan
 
+@can('simpleOrder.index')
+    <li class="nav-item">
+        <a class="nav-link {{ Request::is('simpleOrder*') ? 'active' : '' }}" href="{!! route('simpleOrder.index') !!}">
+            @if($icons)<i class="nav-icon fa fa-tasks"></i>@endif<p>{{trans('lang.simple_order')}}</p></a>
+    </li>
+@endcan
+
 @can('orders.index')
 <li class="nav-item has-treeview {{ Request::is('orders*') || Request::is('orderStatuses*') || Request::is('deliveryAddresses*')? 'menu-open' : '' }}">
     <a href="#" class="nav-link {{ Request::is('orders*') || Request::is('orderStatuses*') || Request::is('deliveryAddresses*')? 'active' : '' }}"> @if($icons)
@@ -134,38 +141,6 @@
             <a class="nav-link {{ Request::is('deliveryAddresses*') ? 'active' : '' }}" href="{!! route('deliveryAddresses.index') !!}">@if($icons)<i class="nav-icon fa fa-map"></i>@endif<p>{{trans('lang.delivery_address_plural')}}</p></a>
         </li>
         @endcan
-
-    </ul>
-</li>
-@endcan
-
-@can('orders.index')
-<li class="nav-item has-treeview {{ Request::is('orders*') || Request::is('orderStatuses*') || Request::is('deliveryAddresses*')? 'menu-open' : '' }}">
-    <a href="#" class="nav-link {{ Request::is('orders*') || Request::is('orderStatuses*') || Request::is('deliveryAddresses*')? 'active' : '' }}"> @if($icons)
-        <i class="nav-icon fa fa-calendar-plus-o"></i>@endif
-        <p>Calendar<i class="right fa fa-angle-left"></i>
-        </p>
-    </a>
-    <ul class="nav nav-treeview">
-
-        @can('orders.index')
-        <li class="nav-item">
-            <a class="nav-link {{ Request::is('orders*') ? 'active' : '' }}" href="{!! route('orders.index') !!}">@if($icons)
-                <i class="nav-icon fa fa-calendar-plus-o"></i>@endif<p>Calendar</p></a>
-        </li>
-        @endcan
-
-
-    </ul>
-    <ul class="nav nav-treeview">
-
-        @can('orders.index')
-        <li class="nav-item">
-            <a class="nav-link {{ Request::is('orders*') ? 'active' : '' }}" href="{!! route('orders.index') !!}">@if($icons)
-                <i class="nav-icon fa fa-calendar-plus-o"></i>@endif<p>Calendar</p></a>
-        </li>
-        @endcan
-
 
     </ul>
 </li>

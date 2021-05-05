@@ -1,148 +1,48 @@
-<html>
+@extends('layouts.app')
 
-<head>
-
-  <meta name="csrf-token" content="{{ csrf_token() }}" />
-
-  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" />
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/fullcalendar/3.9.0/fullcalendar.css" />
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.24.0/moment.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/fullcalendar/3.9.0/fullcalendar.js"></script>
-</head>
-
-<body>
-
-  <div class="container">
-
-    <div id="calendar"></div>
-
+@section('content')
+  <!-- Content Header (Page header) -->
+  <div class="content-header">
+    <div class="container-fluid">
+      <div class="row mb-2">
+        <div class="col-sm-6">
+          <h1 class="m-0 text-dark">{{trans('lang.order_plural')}}<small class="ml-3 mr-3">|</small><small>{{trans('lang.order_desc')}}</small></h1>
+        </div><!-- /.col -->
+        <div class="col-sm-6">
+          <ol class="breadcrumb float-sm-right">
+            <li class="breadcrumb-item"><a href="{{url('/dashboard')}}"><i class="fa fa-dashboard"></i> {{trans('lang.dashboard')}}</a></li>
+            <li class="breadcrumb-item"><a href="{!! route('orders.index') !!}">{{trans('lang.order_plural')}}</a>
+            </li>
+            <li class="breadcrumb-item active">{{trans('lang.order_table')}}</li>
+          </ol>
+        </div><!-- /.col -->
+      </div><!-- /.row -->
+    </div><!-- /.container-fluid -->
   </div>
+  <!-- /.content-header -->
 
-  <script>
-    $(document).ready(function() {
+  <div class="content">
+    <div class="clearfix"></div>
+    @include('flash::message')
+    <div class="card">
+      <div class="card-header">
+        <ul class="nav nav-tabs align-items-end card-header-tabs w-100">
+          <li class="nav-item">
+            <a class="nav-link active" href="{!! url()->current() !!}"><i class="fa fa-list mr-2"></i>{{trans('lang.order_table')}}</a>
+          </li>
+          @can('orders.create')
+            <li class="nav-item">
+              <a class="nav-link" href="{!! route('orders.create') !!}"><i class="fa fa-plus mr-2"></i>{{trans('lang.order_create')}}</a>
+            </li>
+          @endcan
+          @include('layouts.right_toolbar', compact('dataTable'))
+        </ul>
+      </div>
+      <div class="card-body">
+        @include('orders.table')
+        <div class="clearfix"></div>
+      </div>
+    </div>
+  </div>
+@endsection
 
-      $.ajaxSetup({
-        headers: {
-          'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
-        }
-      });
-
-      var calendar = $('#calendar').fullCalendar({
-        editable: true,
-        header: {
-          left: 'prev,next today',
-          center: 'title',
-          right: 'month,agendaWeek,agendaDay'
-        },
-        events: [{
-            title: 'Dulguun',
-            start: '2021-04-16T10:00:00',
-            end: '2021-04-16T11:30:00',
-            textColor: 'white',
-
-          },
-          {
-            title: 'Sra',
-            start: '2021-04-16T11:30:00',
-            end: '2021-04-16T13:00:00',
-            textColor: 'white',
-
-          }
-        ],
-        timeFormat: 'hh:mm ',
-        selectable: true,
-        selectHelper: true,
-        select: function(start, end, allDay) {
-          var title = prompt('Event Title:');
-
-          if (title) {
-            var start = $.fullCalendar.formatDate(start, 'Y-MM-DD HH:mm:ss');
-
-            var end = $.fullCalendar.formatDate(end, 'Y-MM-DD HH:mm:ss');
-
-            $.ajax({
-              url: "/full-calender/action",
-              type: "POST",
-              data: {
-                title: title,
-                start: start,
-                end: end,
-                type: 'add'
-              },
-              success: function(data) {
-                calendar.fullCalendar('refetchEvents');
-                alert("Event Created Successfully");
-              }
-            })
-          }
-        },
-        editable: true,
-        eventResize: function(event, delta) {
-          var start = $.fullCalendar.formatDate(event.start, 'Y-MM-DD HH:mm:ss');
-          var end = $.fullCalendar.formatDate(event.end, 'Y-MM-DD HH:mm:ss');
-          var title = event.title;
-          var id = event.id;
-          $.ajax({
-            url: "/full-calender/action",
-            type: "POST",
-            data: {
-              title: title,
-              start: start,
-              end: end,
-              id: id,
-              type: 'update'
-            },
-            success: function(response) {
-              calendar.fullCalendar('refetchEvents');
-              alert("Event Updated Successfully");
-            }
-          })
-        },
-        eventDrop: function(event, delta) {
-          var start = $.fullCalendar.formatDate(event.start, 'Y-MM-DD HH:mm:ss');
-          var end = $.fullCalendar.formatDate(event.end, 'Y-MM-DD HH:mm:ss');
-          var title = event.title;
-          var id = event.id;
-          $.ajax({
-            url: "/full-calender/action",
-            type: "POST",
-            data: {
-              title: title,
-              start: start,
-              end: end,
-              id: id,
-              type: 'update'
-            },
-            success: function(response) {
-              calendar.fullCalendar('refetchEvents');
-              alert("Event Updated Successfully");
-            }
-          })
-        },
-
-        eventClick: function(event) {
-          if (confirm("Are you sure you want to remove it?")) {
-            var id = event.id;
-            $.ajax({
-              url: "/full-calender/action",
-              type: "POST",
-              data: {
-                id: id,
-                type: "delete"
-              },
-              success: function(response) {
-                calendar.fullCalendar('refetchEvents');
-                alert("Event Deleted Successfully");
-              }
-            })
-          }
-        }
-      });
-
-    });
-  </script>
-
-</body>
-
-</html>

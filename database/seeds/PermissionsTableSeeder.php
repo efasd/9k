@@ -24,7 +24,8 @@ class PermissionsTableSeeder extends Seeder
         'ForgotPasswordController',
         'ResetPasswordController',
         'RegisterController',
-        'PayPalController'
+        'PayPalController',
+        'SimpleOrderController'
     ];
 
     /**
