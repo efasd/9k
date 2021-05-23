@@ -12,12 +12,12 @@
   @endcan
 
   @can('orders.destroy')
-{!! Form::open(['route' => ['orders.destroy', $id], 'method' => 'delete']) !!}
+  {!! Form::open(['route' => ['orders.destroy', $id], 'method' => 'delete']) !!}
   {!! Form::button('<i class="fa fa-trash"></i>', [
   'type' => 'submit',
   'class' => 'btn btn-link text-danger',
   'onclick' => "return confirm('Are you sure?')"
   ]) !!}
-{!! Form::close() !!}
+  {!! Form::close() !!}
   @endcan
 </div>

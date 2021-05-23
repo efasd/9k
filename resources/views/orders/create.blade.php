@@ -69,7 +69,7 @@
 {{--dropzone--}}
 <script src="{{asset('plugins/dropzone/dropzone.js')}}"></script>
 <script type="text/javascript">
-    Dropzone.autoDiscover = false;
-    var dropzoneFields = [];
+  Dropzone.autoDiscover = false;
+  var dropzoneFields = [];
 </script>
 @endpush

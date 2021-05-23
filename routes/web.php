@@ -102,7 +102,17 @@ Route::middleware('auth')->group(function () {
         'show'
     ]);
 
+    Route::middleware('auth')->group(function () {
+        Route::get('calendar/create', 'OrderCalendarController@create');
+    });
+
     Route::resource('calendar', 'OrderCalendarController');
+
+    Route::get('calendar/create', 'OrderCalendarController@create');
+
+    Route::post('calendar/product', 'OrderCalendarController@getEmployees');
+
+    Route::resource('simpleOrder', 'SimpleOrderController');
 
     Route::resource('orderStatuses', 'OrderStatusController')->except([
         'create', 'store', 'destroy'

@@ -101,4 +101,3 @@
     <p>{!! $product->updated_at !!}</p>
   </div>
 </div>
-

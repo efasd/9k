@@ -12,6 +12,7 @@ namespace App\Http\Controllers;
 use App\Criteria\Orders\OrdersOfUserCriteria;
 use App\Criteria\Users\ClientsCriteria;
 use App\Criteria\Users\DriversCriteria;
+use App\Criteria\Products\ProductsOfUserCriteria;
 use App\Criteria\Users\DriversOfMarketCriteria;
 use App\DataTables\OrderDataTable;
 use App\DataTables\ProductOrderDataTable;
@@ -20,9 +21,11 @@ use App\Http\Requests\CreateOrderRequest;
 use App\Http\Requests\UpdateOrderRequest;
 use App\Notifications\AssignedOrder;
 use App\Notifications\StatusChangedOrder;
+use App\Criteria\Users\EmployeesCriteria;
 use App\Repositories\CustomFieldRepository;
 use App\Repositories\NotificationRepository;
 use App\Repositories\OrderRepository;
+use App\Repositories\ProductRepository;
 use App\Repositories\OrderStatusRepository;
 use App\Repositories\PaymentRepository;
 use App\Repositories\UserRepository;
@@ -44,6 +47,11 @@ class OrderController extends Controller
     private $customFieldRepository;
 
     /**
+     * @var ProductRepository
+     */
+    private $productRepository;
+
+    /**
      * @var UserRepository
      */
     private $userRepository;
@@ -56,13 +64,20 @@ class OrderController extends Controller
     /** @var  PaymentRepository */
     private $paymentRepository;
 
-    public function __construct(OrderRepository $orderRepo, CustomFieldRepository $customFieldRepo, UserRepository $userRepo
-        , OrderStatusRepository $orderStatusRepo, NotificationRepository $notificationRepo, PaymentRepository $paymentRepo)
-    {
+    public function __construct(
+        OrderRepository $orderRepo,
+        CustomFieldRepository $customFieldRepo,
+        UserRepository $userRepo,
+        ProductRepository $productRepo,
+        OrderStatusRepository $orderStatusRepo,
+        NotificationRepository $notificationRepo,
+        PaymentRepository $paymentRepo
+    ) {
         parent::__construct();
         $this->orderRepository = $orderRepo;
         $this->customFieldRepository = $customFieldRepo;
         $this->userRepository = $userRepo;
+        $this->productRepository = $productRepo;
         $this->orderStatusRepository = $orderStatusRepo;
         $this->notificationRepository = $notificationRepo;
         $this->paymentRepository = $paymentRepo;
@@ -89,14 +104,19 @@ class OrderController extends Controller
         $user = $this->userRepository->getByCriteria(new ClientsCriteria())->pluck('name', 'id');
         $driver = $this->userRepository->getByCriteria(new DriversCriteria())->pluck('name', 'id');
 
+        $this->productRepository->pushCriteria(new ProductsOfUserCriteria(auth()->id()));
+        $product = $this->productRepository->ByProducts();
+
         $orderStatus = $this->orderStatusRepository->pluck('status', 'id');
 
+        $employees = $this->userRepository->getByCriteria(new EmployeesCriteria())->pluck('name', 'id');
+        $productsSelected = [];
         $hasCustomField = in_array($this->orderRepository->model(), setting('custom_field_models', []));
         if ($hasCustomField) {
             $customFields = $this->customFieldRepository->findByField('custom_field_model', $this->orderRepository->model());
             $html = generateCustomField($customFields);
         }
-        return view('orders.create')->with("customFields", isset($html) ? $html : false)->with("user", $user)->with("driver", $driver)->with("orderStatus", $orderStatus);
+        return view('orders.create')->with("customFields", isset($html) ? $html : false)->with("user", $user)->with("driver", $driver)->with("orderStatus", $orderStatus)->with("employees", $employees)->with("productsSelected", $productsSelected)->with("product", $product);
     }
 
     /**
@@ -110,10 +130,11 @@ class OrderController extends Controller
     {
         $input = $request->all();
         $customFields = $this->customFieldRepository->findByField('custom_field_model', $this->orderRepository->model());
+
         try {
+
             $order = $this->orderRepository->create($input);
             $order->customFieldsValues()->createMany(getCustomFieldsValues($customFields, $request));
-
         } catch (ValidatorException $e) {
             Flash::error($e->getMessage());
         }
@@ -156,7 +177,7 @@ class OrderController extends Controller
         $total += $taxAmount;
         $productOrderDataTable->id = $id;
 
-        return $productOrderDataTable->render('orders.show', ["order" => $order, "total" => $total, "subtotal" => $subtotal,"taxAmount" => $taxAmount]);
+        return $productOrderDataTable->render('orders.show', ["order" => $order, "total" => $total, "subtotal" => $subtotal, "taxAmount" => $taxAmount]);
     }
 
     /**
@@ -185,6 +206,8 @@ class OrderController extends Controller
         $orderStatus = $this->orderStatusRepository->pluck('status', 'id');
 
 
+        $employees = $this->userRepository->getByCriteria(new EmployeesCriteria())->pluck('name', 'id');
+
         $customFieldsValues = $order->customFieldsValues()->with('customField')->get();
         $customFields = $this->customFieldRepository->findByField('custom_field_model', $this->orderRepository->model());
         $hasCustomField = in_array($this->orderRepository->model(), setting('custom_field_models', []));
@@ -192,7 +215,7 @@ class OrderController extends Controller
             $html = generateCustomField($customFields, $customFieldsValues);
         }
 
-        return view('orders.edit')->with('order', $order)->with("customFields", isset($html) ? $html : false)->with("user", $user)->with("driver", $driver)->with("orderStatus", $orderStatus);
+        return view('orders.edit')->with('order', $order)->with("customFields", isset($html) ? $html : false)->with("user", $user)->with("driver", $driver)->with("orderStatus", $orderStatus)->with("employees", $employees);
     }
 
     /**
@@ -279,8 +302,6 @@ class OrderController extends Controller
             $this->orderRepository->delete($id);
 
             Flash::success(__('lang.deleted_successfully', ['operator' => __('lang.order')]));
-
-
         } else {
             Flash::warning('This is only demo app you can\'t change this section ');
         }

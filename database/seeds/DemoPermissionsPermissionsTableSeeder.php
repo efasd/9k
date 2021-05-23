@@ -1563,6 +1563,15 @@ class DemoPermissionsPermissionsTableSeeder extends Seeder
                 'created_at' => '2020-08-13 14:58:02',
                 'updated_at' => '2020-08-13 14:58:02',
                 'deleted_at' => NULL,
+            ),
+            171 =>
+            array (
+                'id' => 178,
+                'name' => 'simpleOrder.index',
+                'guard_name' => 'web',
+                'created_at' => '2021-05-01 14:58:02',
+                'updated_at' => '2021-05-01 14:58:02',
+                'deleted_at' => NULL,
             )
         ));
         

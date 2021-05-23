@@ -245,14 +245,12 @@ class ProductAPIController extends Controller
         $employeeProduct = EmployeeProduct::where('product_id', $product->id)->get();
         foreach($employeeProduct as $employeeId) {
             $employee = User::find($employeeId->user_id);
-             array_push($employeeList, $employee);
+            array_push($employeeList, $employee);
         }
          $product['employees'] = $employeeList;
          $product['appointment'] = $employeeList;
         return $product;
     }
-
-
 
     private function setDiscount($productId) {
 
