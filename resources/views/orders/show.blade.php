@@ -43,29 +43,19 @@
       </div>
       @include('product_orders.table')
       <div class="row">
-      <div class="col-5 offset-7">
-        <div class="table-responsive table-light">
-          <table class="table">
-            <tbody><tr>
-              <th class="text-right">{{trans('lang.order_subtotal')}}</th>
-              <td>{!! getPrice($subtotal) !!}</td>
-            </tr>
-            <tr>
-              <th class="text-right">{{trans('lang.order_delivery_fee')}}</th>
-              <td>{!! getPrice($order['delivery_fee'])!!}</td>
-            </tr>
-            <tr>
-              <th class="text-right">{{trans('lang.order_tax')}} ({!!$order->tax!!}%) </th>
-              <td>{!! getPrice($taxAmount)!!}</td>
-            </tr>
+        <div class="col-5 offset-7">
+          <div class="table-responsive table-light">
+            <table class="table">
+              <tbody>
 
-            <tr>
-              <th class="text-right">{{trans('lang.order_total')}}</th>
-              <td>{!!getPrice($total)!!}</td>
-            </tr>
-            </tbody></table>
+                <tr>
+                  <th class="text-right">{{trans('lang.order_total')}}</th>
+                  <td>{!!getPrice($total)!!}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
-      </div>
       </div>
       <div class="clearfix"></div>
       <div class="row d-print-none">
@@ -81,9 +71,9 @@
 @endsection
 
 @push('scripts')
-  <script type="text/javascript">
-    $("#printOrder").on("click",function () {
-      window.print();
-    });
-  </script>
+<script type="text/javascript">
+  $("#printOrder").on("click", function() {
+    window.print();
+  });
+</script>
 @endpush

@@ -1,5 +1,5 @@
 @if($customFields)
-    <h5 class="col-12 pb-4">{!! trans('lang.main_fields') !!}</h5>
+<h5 class="col-12 pb-4">{!! trans('lang.main_fields') !!}</h5>
 @endif
 <div style="flex: 50%;max-width: 50%;padding: 0 4px;" class="column">
     <!-- User Id Field -->
@@ -7,18 +7,50 @@
         {!! Form::label('user_id', trans("lang.order_user_id"),['class' => 'col-3 control-label text-right']) !!}
         <div class="col-9">
             {!! Form::select('user_id', $user, null, ['class' => 'select2 form-control']) !!}
+
             <div class="form-text text-muted">{{ trans("lang.order_user_id_help") }}</div>
         </div>
     </div>
 
-    <!-- Driver Id Field -->
     <div class="form-group row ">
+        {!! Form::label('employees[]', trans("lang.market_employees"),['class' => 'col-3 control-label text-right']) !!}
+        <div class="col-9">
+            {!! Form::select('employees[] ', $employees, null, ['class' => 'select2 form-control' ]) !!}
+
+            <div class="form-text text-muted">{{ trans("lang.market_employees") }}</div>
+        </div>
+    </div>
+
+    <div class="form-group row ">
+        {!! Form::label('products[]', trans("lang.coupon_product_id"),['class' => 'col-3 control-label text-right']) !!}
+        <div class="col-9">
+            {!! Form::select('products[]', $product, $productsSelected, ['class' => 'select2 form-control', 'multiple'=>'multiple']) !!}
+            <div class="form-text text-muted">{{ trans("lang.coupon_product_id_help") }}</div>
+        </div>
+    </div>
+
+
+
+    <!-- Driver Id Field -->
+    <!-- <div class="form-group row ">
         {!! Form::label('driver_id', trans("lang.order_driver_id"),['class' => 'col-3 control-label text-right']) !!}
         <div class="col-9">
             {!! Form::select('driver_id', $driver, null, ['data-empty'=>trans("lang.order_driver_id_placeholder"),'class' => 'select2 not-required form-control']) !!}
             <div class="form-text text-muted">{{ trans("lang.order_driver_id_help") }}</div>
         </div>
+    </div> -->
+
+    <div class="form-group row ">
+        {!! Form::label('hint', trans("lang.select_day"), ['class' => 'col-3 control-label text-right']) !!}
+        <div class="col-9">
+            {!! Form::date('hint', 'null', ['class' => 'form-control','placeholder'=> trans("lang.select_day")]) !!}
+            <div class="form-text text-muted">
+                {{ trans("lang.select_day") }}
+            </div>
+        </div>
     </div>
+
+
 
     <!-- Order Status Id Field -->
     <div class="form-group row ">
@@ -28,6 +60,8 @@
             <div class="form-text text-muted">{{ trans("lang.order_order_status_id_help") }}</div>
         </div>
     </div>
+
+
 
     <!-- Status Field -->
     <div class="form-group row ">
@@ -58,10 +92,10 @@
 <div style="flex: 50%;max-width: 50%;padding: 0 4px;" class="column">
 
     <!-- Tax Field -->
-    <div class="form-group row ">
+    <!-- <div class="form-group row ">
         {!! Form::label('tax', trans("lang.order_tax"), ['class' => 'col-3 control-label text-right']) !!}
         <div class="col-9">
-            {!! Form::number('tax', null,  ['class' => 'form-control', 'step'=>"any",'placeholder'=>  trans("lang.order_tax_placeholder")]) !!}
+            {!! Form::number('tax', null, ['class' => 'form-control', 'step'=>"any",'placeholder'=> trans("lang.order_tax_placeholder")]) !!}
             <div class="form-text text-muted">
                 {{ trans("lang.order_tax_help") }}
             </div>
@@ -69,31 +103,33 @@
     </div>
 
     <!-- delivery_fee Field -->
-    <div class="form-group row ">
+    <!-- <div class="form-group row ">
         {!! Form::label('delivery_fee', trans("lang.order_delivery_fee"), ['class' => 'col-3 control-label text-right']) !!}
         <div class="col-9">
-            {!! Form::number('delivery_fee', null,  ['class' => 'form-control','step'=>"any",'placeholder'=>  trans("lang.order_delivery_fee_placeholder")]) !!}
+            {!! Form::number('delivery_fee', null, ['class' => 'form-control','step'=>"any",'placeholder'=> trans("lang.order_delivery_fee_placeholder")]) !!}
             <div class="form-text text-muted">
                 {{ trans("lang.order_delivery_fee_help") }}
             </div>
         </div>
-    </div>
+    </div> -->
     <!-- Hint Field -->
-    <div class="form-group row ">
+
+
+    <!-- <div class="form-group row ">
         {!! Form::label('hint', trans("lang.order_hint"), ['class' => 'col-3 control-label text-right']) !!}
         <div class="col-9">
-            {!! Form::textarea('hint', null, ['class' => 'form-control','placeholder'=>
-             trans("lang.order_hint_placeholder")  ]) !!}
+            {!! Form::number('hint', null, ['class' => 'form-control','placeholder'=>
+            trans("lang.order_hint_placeholder") ]) !!}
             <div class="form-text text-muted">{{ trans("lang.order_hint_help") }}</div>
         </div>
-    </div>
+    </div> -->
 </div>
 @if($customFields)
-    <div class="clearfix"></div>
-    <div class="col-12 custom-field-container">
-        <h5 class="col-12 pb-4">{!! trans('lang.custom_field_plural') !!}</h5>
-        {!! $customFields !!}
-    </div>
+<div class="clearfix"></div>
+<div class="col-12 custom-field-container">
+    <h5 class="col-12 pb-4">{!! trans('lang.custom_field_plural') !!}</h5>
+    {!! $customFields !!}
+</div>
 @endif
 <!-- Submit Field -->
 <div class="form-group col-12 text-right">

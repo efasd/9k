@@ -29,6 +29,6 @@ class CalendarSeeder
                     'role_id' => 2,
                 )
             ));
-        } catch (Exception $exception){}
+        } catch (Exception $exception) { }
     }
 }

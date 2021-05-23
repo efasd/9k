@@ -78,7 +78,18 @@ class ProductRepository extends BaseRepository implements CacheableInterface
     {
         $products = [];
         foreach ($this->all() as $model) {
-            if(!empty($model->market)){
+            if (!empty($model->market)) {
+                $products[$model->market->name][$model->id] = $model->name;
+            }
+        }
+        return $products;
+    }
+
+    public function ByProducts()
+    {
+        $products = [];
+        foreach ($this->all() as $model) {
+            if (!empty($model->market)) {
                 $products[$model->market->name][$model->id] = $model->name;
             }
         }
@@ -89,7 +100,7 @@ class ProductRepository extends BaseRepository implements CacheableInterface
     {
         $employee = [];
         foreach ($this->all() as $model) {
-            if(!empty($model->employee)){
+            if (!empty($model->employee)) {
                 $employee[$model->employee->name][$model->id] = $model->name;
             }
         }
