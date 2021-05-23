@@ -158,12 +158,18 @@ class OrderCalendarController
                     ->get();
 
                 foreach($employeeAppointment as $app) {
-                    $order = DB::table('orders')->where('hint', $app->id)->get();
+                    $orderList = [];
+                    $orders = DB::table('orders')->where('hint', $app->id)->get();
+                    foreach($orders as $order) {
+                        $customerInfo = DB::table('users')->find( $order->user_id);
+                        $order->customerInfo = $customerInfo;
+                        array_push($orderList, $order);
+                    }
                     $product = DB::table('products')->where('id', $app->product_id)->get();
-                    if (count($order) > 0) {
-                        $app->userInfo = $employeeInfo;
+                    if (count($orderList) > 0) {
+                        $app->employee = $employeeInfo;
                         $app->product = $product;
-                        $app->order = $order;
+                        $app->order = $orderList;
                         array_push($appointment,  (object) $app);
                     }
                 }
