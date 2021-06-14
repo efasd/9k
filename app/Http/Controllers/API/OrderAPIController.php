@@ -294,7 +294,6 @@ class OrderAPIController extends Controller
     }
 
     private function checkInvoice($invoiceNotAccepted) {
-
         foreach ($invoiceNotAccepted as $invoice) {
             $offset = array (
                 "page_number" => 1,
@@ -472,6 +471,9 @@ class OrderAPIController extends Controller
                 }
             }
             DB::table('orders')->where('id', $order->id)->update(['employee_appointment_during' => $order->employee_appointment_during]);
+            if ($order->order_status_id == 4) {
+                DB::table('employee_appointments')->where('id', $order->hint)->update(['is_active' => 1]);
+            }
         }
         return $this->sendResponse(
             $order->toArray(), __('lang.saved_successfully', ['operator' => __('lang.order')])
@@ -498,7 +500,7 @@ class OrderAPIController extends Controller
         try {
             $order = $this->orderRepository->update($input, $id);
 
-            if (isset($input['order_status_id']) && ( $input['order_status_id'] == 5 || $input['order_status_id'] == 3 ) && !empty($order)) {
+            if (isset($input['order_status_id']) && ( $input['order_status_id'] == 5 || $input['order_status_id'] == 4 || $input['order_status_id'] == 3 ) && !empty($order)) {
                 $this->paymentRepository->update(['status' => 'Paid'], $order['payment_id']);
 
                 if ($request->input('hint') !== null) {

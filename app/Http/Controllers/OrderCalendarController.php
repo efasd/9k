@@ -68,8 +68,7 @@ class OrderCalendarController
         $this->categoryRepository = $categoryRepo;
         $this->productRepository = $productRepo;
     }
-    public function index()
-    {
+    public function index() {
         return view('calendar.index');
     }
 
