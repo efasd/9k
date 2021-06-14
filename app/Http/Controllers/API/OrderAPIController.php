@@ -526,6 +526,12 @@ class OrderAPIController extends Controller
                         }
                     }
 
+                    if ($appointment && $input['active'] == 0) {
+                        DB::table('employee_appointments')
+                            ->where('id', $request->input('hint'))
+                            ->update(['is_active' => 0]);
+                    }
+
                     if($request->input('market_id')) {
                         $market = DB::table('markets')->find($request->input('market_id'));
                         if ($market) {
