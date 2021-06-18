@@ -116,7 +116,17 @@ class OrderController extends Controller
             $customFields = $this->customFieldRepository->findByField('custom_field_model', $this->orderRepository->model());
             $html = generateCustomField($customFields);
         }
-        return view('orders.create')->with("customFields", isset($html) ? $html : false)->with("user", $user)->with("driver", $driver)->with("orderStatus", $orderStatus)->with("employees", $employees)->with("productsSelected", $productsSelected)->with("product", $product);
+        $appointment = [];
+
+        return view('orders.create')
+            ->with("customFields", isset($html) ? $html : false)
+            ->with("user", $user)
+            ->with("driver", $driver)
+            ->with("orderStatus", $orderStatus)
+            ->with("employees", $employees)
+            ->with("productsSelected", $productsSelected)
+            ->with("appointment", $appointment)
+            ->with("product", $product);
     }
 
     /**
@@ -215,7 +225,13 @@ class OrderController extends Controller
             $html = generateCustomField($customFields, $customFieldsValues);
         }
 
-        return view('orders.edit')->with('order', $order)->with("customFields", isset($html) ? $html : false)->with("user", $user)->with("driver", $driver)->with("orderStatus", $orderStatus)->with("employees", $employees);
+        return view('orders.edit')
+            ->with('order', $order)
+            ->with("customFields", isset($html) ? $html : false)
+            ->with("user", $user)
+            ->with("driver", $driver)
+            ->with("orderStatus", $orderStatus)
+            ->with("employees", $employees);
     }
 
     /**

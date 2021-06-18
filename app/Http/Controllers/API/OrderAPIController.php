@@ -103,6 +103,13 @@ class OrderAPIController extends Controller
         }
         $orders = $this->orderRepository->all();
 
+        for($i = 0; $i < $orders->count(); $i++) {
+            $customFieldValue = DB::table('custom_field_values')->where('customizable_id', $orders[$i]->user_id)->get();
+            $orders[$i]->userPhoneNumber = $customFieldValue->get(0)->value;
+        }
+
+//        error_log(json_encode($orders));
+
         return $this->sendResponse($orders->toArray(), 'Orders retrieved successfully');
     }
 
@@ -130,6 +137,7 @@ class OrderAPIController extends Controller
         if (empty($order)) {
             return $this->sendError('Order not found');
         }
+        error_log(json_encode($order->toArray()));
         return $this->sendResponse($order->toArray(), 'Order retrieved successfully');
     }
 
@@ -160,6 +168,7 @@ class OrderAPIController extends Controller
             }
         }
         $response = $this->cashPayment($request);
+        error_log(json_encode($response));
         if ($response) {
             return $this->sendResponse($response, __('lang.saved_successfully', ['operator' => __('lang.order')]));
         }
@@ -444,8 +453,10 @@ class OrderAPIController extends Controller
             }
             $amount += $order->delivery_fee;
             $amountWithTax = $amount + ($amount * $order->tax / 100);
+            $user =
             $payment = $this->paymentRepository->create([
                 "user_id" => $input['user_id'],
+                "userPhoneNumber" => $input['user_id'],
                 "description" => trans("lang.payment_order_waiting"),
                 "price" => $amountWithTax,
                 "status" => 'Waiting for Client',
