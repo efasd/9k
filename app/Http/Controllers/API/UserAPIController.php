@@ -284,10 +284,11 @@ class UserAPIController extends Controller
             ->get();
 
         if (count($isEmployeeRegisterActiveDay) > 0) {
+            $selectedDate = null;
             $acceptedActiveDay = false;
             $employeeActiveDays = DB::table('active_job_days')
                 ->where('employee_id', $request->input('employeeId'))
-                ->where('day', ($numberOfWeek->format("w")))
+                ->where('day', ($numberOfWeek->format("N")-1))
                 ->where('active', 1)
                 ->get();
             if (count($employeeActiveDays) > 0) {
@@ -304,14 +305,32 @@ class UserAPIController extends Controller
                     ->where('active_day', '>=', $nowDateTimes->format('Y-m-d'))
                     ->update(['product_id' => $request->input('productId')]);
 
-                $appointment = DB::table('employee_appointments')
-                    ->where('active_day', 'like', '%'.$request->input('date').'%')
-                    ->where('is_active', '0')
-                    ->where('employee_id', $request->input('employeeId'))
-                    ->where('start_date', '>=', $nowDateTimes->format('H:i:s'))
-                    ->where('active_day', '>=', $nowDateTimes->format('Y-m-d'))
-                    ->get();
-
+                $haveTimeLimit = false;
+                if (!$haveTimeLimit) {
+                    if ($employeeActiveDays[0]->start_date != '00:00:00' && $employeeActiveDays[0]->end_date != '00:00:00') {
+                        $haveTimeLimit = true;
+                    }
+                }
+                $appointment = null;
+                if ($haveTimeLimit) {
+                    $appointment = DB::table('employee_appointments')
+                        ->where('active_day', 'like', '%'.$request->input('date').'%')
+                        ->where('is_active', '0')
+                        ->where('employee_id', $request->input('employeeId'))
+                        ->where('start_date', '>=', $nowDateTimes->format('H:i:s'))
+                        ->where('active_day', '>=', $nowDateTimes->format('Y-m-d'))
+                        ->whereBetween('start_date', [$employeeActiveDays[0]->start_date, $employeeActiveDays[0]->end_date])
+                        ->whereBetween('end_date', [$employeeActiveDays[0]->start_date, $employeeActiveDays[0]->end_date])
+                        ->get();
+                } else {
+                    $appointment = DB::table('employee_appointments')
+                        ->where('active_day', 'like', '%'.$request->input('date').'%')
+                        ->where('is_active', '0')
+                        ->where('employee_id', $request->input('employeeId'))
+                        ->where('start_date', '>=', $nowDateTimes->format('H:i:s'))
+                        ->where('active_day', '>=', $nowDateTimes->format('Y-m-d'))
+                        ->get();
+                }
                 foreach ($appointment as $value) {
                     $value->start_date = substr($value->start_date, 0, -3);
                     $value->end_date = substr($value->end_date, 0, -3);
@@ -322,16 +341,36 @@ class UserAPIController extends Controller
         } else {
             if ($acceptedActiveDay) {
                 $updated = DB::table('employee_appointments')
-                ->where('active_day', 'like', '%' . $request->input('date') . '%')
-                ->where('is_active', '0')
-                ->where('employee_id', $request->input('employeeId'))
-                ->update(['product_id' => $request->input('productId')]);
+                    ->where('active_day', 'like', '%' . $request->input('date') . '%')
+                    ->where('is_active', '0')
+                    ->where('employee_id', $request->input('employeeId'))
+                    ->update(['product_id' => $request->input('productId')]);
 
-                $appointment = DB::table('employee_appointments')
-                ->where('active_day', 'like', '%' . $request->input('date') . '%')
-                ->where('is_active', '0')
-                ->where('employee_id', $request->input('employeeId'))
-                ->get();
+
+                $haveTimeLimit = false;
+                if (!$haveTimeLimit) {
+                    if ($employeeActiveDays[0]->start_date != '00:00:00' && $employeeActiveDays[0]->end_date != '00:00:00') {
+                        $haveTimeLimit = true;
+                    }
+                }
+                $appointment = null;
+                if ($haveTimeLimit) {
+                    $appointment = DB::table('employee_appointments')
+                        ->where('active_day', 'like', '%' . $request->input('date') . '%')
+                        ->where('is_active', '0')
+                        ->where('employee_id', $request->input('employeeId'))
+                        ->whereBetween('start_date', [$employeeActiveDays[0]->start_date, $employeeActiveDays[0]->end_date])
+                        ->whereBetween('end_date', [$employeeActiveDays[0]->start_date, $employeeActiveDays[0]->end_date])
+                        ->get();
+                } else {
+
+                    $appointment = DB::table('employee_appointments')
+                        ->where('active_day', 'like', '%' . $request->input('date') . '%')
+                        ->where('is_active', '0')
+                        ->where('employee_id', $request->input('employeeId'))
+                        ->get();
+                }
+
 
                 foreach ($appointment as $value) {
                     $value->start_date = substr($value->start_date, 0, -3);
@@ -350,7 +389,7 @@ class UserAPIController extends Controller
 
             $activeDay = new DateTime(date_create($request->input('date'))->format('Y-m-d H:i:s'));
             $nowAddDays = new DateTime(date_create()->format('Y-m-d H:i:s'));
-            date_add($nowAddDays, date_interval_create_from_date_string('6 days'));
+            date_add($nowAddDays, date_interval_create_from_date_string('16 days'));
             if ($nowAddDays <= $activeDay) {
                 return $this->sendResponse(true, 'Та 7 ирэх хоногын дотор захиалга үүсгэх боломжтой');
             }
@@ -386,7 +425,6 @@ class UserAPIController extends Controller
                         'start_date' => $betweenDate['startTime'],
                     ])->get();
 
-                error_log(json_encode($isActiveChecker));
                 if (count($isActiveChecker) == 0) {
 
                     $inserted = DB::table('employee_appointments')
