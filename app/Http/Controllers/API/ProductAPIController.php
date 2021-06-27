@@ -48,8 +48,6 @@ class ProductAPIController extends Controller
      */
     private $uploadRepository;
 
-
-
     public function __construct
     (
         ProductRepository $productRepo,
@@ -141,7 +139,8 @@ class ProductAPIController extends Controller
             $product = $this->productRepository->findWithoutFail($id);
         }
         $employeeList = [];
-        $employeeProduct = EmployeeProduct::where('product_id', $product->id)->get();
+        $employeeProduct = EmployeeProduct::where('product_id', $product->id)->inRandomOrder()->get();
+
         foreach($employeeProduct as $employeeId) {
             $employee = User::find($employeeId->user_id);
             array_push($employeeList, $employee);

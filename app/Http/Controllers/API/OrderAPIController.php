@@ -108,8 +108,6 @@ class OrderAPIController extends Controller
             $orders[$i]->userPhoneNumber = $customFieldValue->get(0)->value;
         }
 
-//        error_log(json_encode($orders));
-
         return $this->sendResponse($orders->toArray(), 'Orders retrieved successfully');
     }
 

@@ -256,8 +256,7 @@ class UserAPIController extends Controller
      * @throws \Exception
      */
     function getEmployeeAppointment(Request $request) {
-        $market = DB::table('markets')
-            ->find($request->input('marketId'));
+        $market = DB::table('markets')->find($request->input('marketId'));
         if ($market->start_date == null || $market->end_date == null || $market->duration_range == null) {
             return $this->sendResponse(false, 'Маркет дээр эхлэх болон дуусах хугацаа оруулаагүй байна');
         }
@@ -288,7 +287,7 @@ class UserAPIController extends Controller
             $acceptedActiveDay = false;
             $employeeActiveDays = DB::table('active_job_days')
                 ->where('employee_id', $request->input('employeeId'))
-                ->where('day', ($numberOfWeek->format("w") - 1))
+                ->where('day', ($numberOfWeek->format("w")))
                 ->where('active', 1)
                 ->get();
             if (count($employeeActiveDays) > 0) {
