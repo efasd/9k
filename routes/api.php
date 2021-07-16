@@ -34,6 +34,9 @@ Route::prefix('manager')->group(function () {
     Route::get('user', 'API\Manager\UserAPIController@user');
     Route::get('logout', 'API\Manager\UserAPIController@logout');
     Route::get('settings', 'API\Manager\UserAPIController@settings');
+
+
+    Route::get('employee/{marketId}', 'API\UserAPIController@getEmployee');
 });
 
 
@@ -112,8 +115,10 @@ Route::middleware('auth:api')->group(function () {
         Route::prefix('manager')->group(function () {
             Route::post('users/{id}', 'API\UserAPIController@update');
             Route::get('users/drivers_of_market/{id}', 'API\Manager\UserAPIController@driversOfMarket');
-            Route::get('dashboard/{id}', 'API\DashboardAPIController@manager');
+            Route::get('dashboard/{id}', 'API\DashboardAPIConstroller@manager');
             Route::resource('markets', 'API\Manager\MarketAPIController');
+
+            Route::post('employee/{marketId}/{$userId}', 'API\UserAPIController@setEmployee');
         });
     });
     Route::post('users/{id}', 'API\UserAPIController@update');

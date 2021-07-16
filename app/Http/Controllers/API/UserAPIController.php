@@ -231,7 +231,6 @@ class UserAPIController extends Controller
     }
 
     function getEmployees($id) {
-
         $user = $this->userRepository->findWithoutFail($id);
         $user = DB::table('users')
             ->where('id', '=', $id)
@@ -257,44 +256,45 @@ class UserAPIController extends Controller
      */
     function getEmployeeAppointment(Request $request) {
         $market = DB::table('markets')->find($request->input('marketId'));
+
         if ($market->start_date == null || $market->end_date == null || $market->duration_range == null) {
             return $this->sendResponse(false, 'Маркет дээр эхлэх болон дуусах хугацаа оруулаагүй байна');
         }
 
         $nowDateTimes = new DateTime();
 
-        $employeeCheck = DB::table('employee_markets')
-            ->where('user_id', $request->input('employeeId'))
-            ->where('market_id', $request->input('marketId'))
-            ->get();
+        $employeeCheck = $this->getEmployeeCheck(
+            $request->input('employeeId'),
+            $request->input('marketId'),
+            $request->input('date')
+        );
 
-        if(count($employeeCheck) === 0) {
-            return $this->sendError('Ажилтан салбар дээр бүртгэлгүй байна', 500);
+        if (!$employeeCheck->success) {
+            return $this->sendError($employeeCheck->message, 500);
         }
-        $now = date("Y-m-d H:i:s");
-        if (strtotime(date("Y-m-d", strtotime($now))) > strtotime($request->input('date'))) {
-            return $this->sendResponse(true, 'Өнгөрсөн цаг дээр цаг захиалах боломжгүй');
-        }
+
         $appointment = [];
         $numberOfWeek = new DateTime($request->input('date'));
 
-        $acceptedActiveDay = true;
-        $isEmployeeRegisterActiveDay = DB::table('active_job_days')
+        /* Employee active day of job*/
+        $isEmployeeDuringJobDay = DB::table('active_job_days')
             ->where('employee_id', $request->input('employeeId'))
             ->get();
 
-        if (count($isEmployeeRegisterActiveDay) > 0) {
+        $employeeActiveDays = [];
+        $acceptedActiveDay = true;
+        if (count($isEmployeeDuringJobDay) > 0) {
             $selectedDate = null;
-            $acceptedActiveDay = false;
             $employeeActiveDays = DB::table('active_job_days')
                 ->where('employee_id', $request->input('employeeId'))
-                ->where('day', ($numberOfWeek->format("N")-1))
+                ->where('day', ($numberOfWeek->format("N") - 1))
                 ->where('active', 1)
                 ->get();
-            if (count($employeeActiveDays) > 0) {
-                $acceptedActiveDay = true;
+            if (count($employeeActiveDays) == 0) {
+                return $this->sendError('Ажилтан энэ '.($numberOfWeek->format("N") - 1).' ажилладагүй болно', 500);
             }
         }
+        $now = date("Y-m-d H:i:s");
         if (strtotime(date("Y-m-d", strtotime($now))) == strtotime($request->input('date'))){
             if ($acceptedActiveDay) {
                 DB::table('employee_appointments')
@@ -307,7 +307,7 @@ class UserAPIController extends Controller
 
                 $haveTimeLimit = false;
                 if (!$haveTimeLimit) {
-                    if ($employeeActiveDays[0]->start_date != '00:00:00' && $employeeActiveDays[0]->end_date != '00:00:00') {
+                    if ($employeeActiveDays && $employeeActiveDays[0]->start_date != '00:00:00' && $employeeActiveDays[0]->end_date != '00:00:00') {
                         $haveTimeLimit = true;
                     }
                 }
@@ -346,7 +346,6 @@ class UserAPIController extends Controller
                     ->where('employee_id', $request->input('employeeId'))
                     ->update(['product_id' => $request->input('productId')]);
 
-
                 $haveTimeLimit = false;
                 if (!$haveTimeLimit) {
                     if ($employeeActiveDays[0]->start_date != '00:00:00' && $employeeActiveDays[0]->end_date != '00:00:00') {
@@ -363,14 +362,12 @@ class UserAPIController extends Controller
                         ->whereBetween('end_date', [$employeeActiveDays[0]->start_date, $employeeActiveDays[0]->end_date])
                         ->get();
                 } else {
-
                     $appointment = DB::table('employee_appointments')
                         ->where('active_day', 'like', '%' . $request->input('date') . '%')
                         ->where('is_active', '0')
                         ->where('employee_id', $request->input('employeeId'))
                         ->get();
                 }
-
 
                 foreach ($appointment as $value) {
                     $value->start_date = substr($value->start_date, 0, -3);
@@ -480,6 +477,29 @@ class UserAPIController extends Controller
         }
     }
 
+    private function getEmployeeCheck($employeeId, $marketId, $date) {
+        $now = date("Y-m-d H:i:s");
+        $employeeCheck = DB::table('employee_markets')
+            ->where('user_id', $employeeId)
+            ->where('market_id', $marketId)
+            ->get();
+
+        if (count($employeeCheck) === 0) {
+            return $res = (object) [
+                'success' => false,
+                'message' => 'Ажилтан салбар дээр бүртгэлгүй байна'
+            ];
+        }
+
+        if (strtotime(date("Y-m-d", strtotime($now))) > strtotime($date)) {
+            return $res = (object) [
+                'success' => false,
+                'message' => 'Өнгөрсөн цаг дээр цаг захиалах боломжгүй'
+            ];
+        }
+        return $res = (object) ['success' => true];
+    }
+
     private function setAppointmentDiscount($productId, $startDate, $chosenDate) {
 
         $nowDateTimes = new DateTime($chosenDate);
@@ -537,5 +557,40 @@ class UserAPIController extends Controller
             return $this->sendResponse(true, 'Амжилттай бүртгэгдлээ');
         }
         return $this->sendResponse(false, 'Бүртгэгдсэн цаг байна');
+    }
+
+    function getEmployee($marketId) {
+        if (!$marketId) {
+            return $this->sendResponse(false, 'Маркет сонгоогүй байна');
+        }
+
+        $employeeData = DB::table('employee_markets')
+            ->where('market_id', $marketId)
+            ->get();
+
+        foreach ($employeeData as $employee) {
+            $days = DB::table('active_job_days')
+                ->where('employee_id', $employee->user_id)
+                ->get();
+
+            $employee->detail = DB::table('users')->find($employee->user_id);
+
+            $employee->active_date = $days;
+        }
+        return $employeeData;
+    }
+
+    function setEmployee($marketId, $userId) {
+        if (!$marketId) {
+            return $this->sendResponse(false, 'Маркет сонгоогүй байна');
+        }
+        if (!$userId) {
+            return $this->sendResponse(false, 'Хэрэглэгч сонгоогүй байна');
+        }
+
+        $employeeData = DB::table('user_markets')
+            ->where('market_id', $marketId)
+            ->get();
+        return $employeeData;
     }
 }
