@@ -260,7 +260,6 @@ class UserAPIController extends Controller
         if ($market->start_date == null || $market->end_date == null || $market->duration_range == null) {
             return $this->sendResponse(false, 'Маркет дээр эхлэх болон дуусах хугацаа оруулаагүй байна');
         }
-
         $nowDateTimes = new DateTime();
 
         $employeeCheck = $this->getEmployeeCheck(
@@ -273,7 +272,6 @@ class UserAPIController extends Controller
             return $this->sendError($employeeCheck->message, 500);
         }
 
-        $appointment = [];
         $numberOfWeek = new DateTime($request->input('date'));
 
         /* Employee active day of job*/
@@ -281,118 +279,149 @@ class UserAPIController extends Controller
             ->where('employee_id', $request->input('employeeId'))
             ->get();
 
-        $employeeActiveDays = [];
-        $acceptedActiveDay = true;
+        $employeeActiveADay = null;
+        $isEmployeeHaveTimeLimit = false;
         if (count($isEmployeeDuringJobDay) > 0) {
-            $selectedDate = null;
-            $employeeActiveDays = DB::table('active_job_days')
+            $employeeActiveADay = DB::table('active_job_days')
                 ->where('employee_id', $request->input('employeeId'))
                 ->where('day', ($numberOfWeek->format("N") - 1))
                 ->where('active', 1)
+                ->first();
+
+            if ($employeeActiveADay == null) {
+                return $this->sendError('Ажилтан энэ '.$numberOfWeek->format("N").' ажилладагүй болно', 500);
+            }
+            if ($employeeActiveADay->start_date != '00:00:00' && $employeeActiveADay->end_date != '00:00:00') {
+                $isEmployeeHaveTimeLimit = true;
+            }
+        }
+
+        /* update product */
+        DB::table('employee_appointments')
+            ->where('active_day', 'like', '%'.$request->input('date').'%')
+            ->where('is_active', '0')
+            ->where('employee_id', $request->input('employeeId'))
+            ->where('start_date', '>=', $nowDateTimes->format('H:i:s'))
+            ->where('active_day', '>=', $nowDateTimes->format('Y-m-d'))
+            ->update(['product_id' => $request->input('productId')]);
+
+        $appointment = [];
+        if ($isEmployeeHaveTimeLimit) {
+            $appointment = DB::table('employee_appointments')
+                ->where('active_day', 'like', '%'.$request->input('date').'%')
+                ->where('is_active', '0')
+                ->where('employee_id', $request->input('employeeId'))
+                ->whereBetween('start_date', [$employeeActiveADay->start_date, $employeeActiveADay->end_date])
+                ->whereBetween('end_date', [$employeeActiveADay->start_date, $employeeActiveADay->end_date])
                 ->get();
-            if (count($employeeActiveDays) == 0) {
-                return $this->sendError('Ажилтан энэ '.($numberOfWeek->format("N") - 1).' ажилладагүй болно', 500);
-            }
-        }
-        $now = date("Y-m-d H:i:s");
-        if (strtotime(date("Y-m-d", strtotime($now))) == strtotime($request->input('date'))){
-            if ($acceptedActiveDay) {
-                DB::table('employee_appointments')
-                    ->where('active_day', 'like', '%'.$request->input('date').'%')
-                    ->where('is_active', '0')
-                    ->where('employee_id', $request->input('employeeId'))
-                    ->where('start_date', '>=', $nowDateTimes->format('H:i:s'))
-                    ->where('active_day', '>=', $nowDateTimes->format('Y-m-d'))
-                    ->update(['product_id' => $request->input('productId')]);
-
-                $haveTimeLimit = false;
-                if (!$haveTimeLimit) {
-                    if ($employeeActiveDays && $employeeActiveDays[0]->start_date != '00:00:00' && $employeeActiveDays[0]->end_date != '00:00:00') {
-                        $haveTimeLimit = true;
-                    }
-                }
-                $appointment = null;
-                if ($haveTimeLimit) {
-                    $appointment = DB::table('employee_appointments')
-                        ->where('active_day', 'like', '%'.$request->input('date').'%')
-                        ->where('is_active', '0')
-                        ->where('employee_id', $request->input('employeeId'))
-                        ->where('start_date', '>=', $nowDateTimes->format('H:i:s'))
-                        ->where('active_day', '>=', $nowDateTimes->format('Y-m-d'))
-                        ->whereBetween('start_date', [$employeeActiveDays[0]->start_date, $employeeActiveDays[0]->end_date])
-                        ->whereBetween('end_date', [$employeeActiveDays[0]->start_date, $employeeActiveDays[0]->end_date])
-                        ->get();
-                } else {
-                    $appointment = DB::table('employee_appointments')
-                        ->where('active_day', 'like', '%'.$request->input('date').'%')
-                        ->where('is_active', '0')
-                        ->where('employee_id', $request->input('employeeId'))
-                        ->where('start_date', '>=', $nowDateTimes->format('H:i:s'))
-                        ->where('active_day', '>=', $nowDateTimes->format('Y-m-d'))
-                        ->get();
-                }
-                foreach ($appointment as $value) {
-                    $value->start_date = substr($value->start_date, 0, -3);
-                    $value->end_date = substr($value->end_date, 0, -3);
-                    $discountPercent = $this->setAppointmentDiscount($request->input('productId'), $value->start_date, $request->input('date'));
-                    $value->discount_percent = $discountPercent;
-                }
-            }
         } else {
-            if ($acceptedActiveDay) {
-                $updated = DB::table('employee_appointments')
-                    ->where('active_day', 'like', '%' . $request->input('date') . '%')
-                    ->where('is_active', '0')
-                    ->where('employee_id', $request->input('employeeId'))
-                    ->update(['product_id' => $request->input('productId')]);
-
-                $haveTimeLimit = false;
-                if (!$haveTimeLimit) {
-                    if ($employeeActiveDays[0]->start_date != '00:00:00' && $employeeActiveDays[0]->end_date != '00:00:00') {
-                        $haveTimeLimit = true;
-                    }
-                }
-                $appointment = null;
-                if ($haveTimeLimit) {
-                    $appointment = DB::table('employee_appointments')
-                        ->where('active_day', 'like', '%' . $request->input('date') . '%')
-                        ->where('is_active', '0')
-                        ->where('employee_id', $request->input('employeeId'))
-                        ->whereBetween('start_date', [$employeeActiveDays[0]->start_date, $employeeActiveDays[0]->end_date])
-                        ->whereBetween('end_date', [$employeeActiveDays[0]->start_date, $employeeActiveDays[0]->end_date])
-                        ->get();
-                } else {
-                    $appointment = DB::table('employee_appointments')
-                        ->where('active_day', 'like', '%' . $request->input('date') . '%')
-                        ->where('is_active', '0')
-                        ->where('employee_id', $request->input('employeeId'))
-                        ->get();
-                }
-
-                foreach ($appointment as $value) {
-                    $value->start_date = substr($value->start_date, 0, -3);
-                    $value->end_date = substr($value->end_date, 0, -3);
-                    $discountPercent = $this->setAppointmentDiscount($request->input('productId'), $value->start_date, $request->input('date'));
-                    $value->discount_percent = $discountPercent;
-                }
-            }
+            $appointment = DB::table('employee_appointments')
+                ->where('active_day', 'like', '%'.$request->input('date').'%')
+                ->where('is_active', '0')
+                ->where('employee_id', $request->input('employeeId'))
+                ->where('start_date', '>=', $nowDateTimes->format('H:i:s'))
+                ->where('active_day', '>=', $nowDateTimes->format('Y-m-d'))
+                ->get();
         }
+        foreach ($appointment as $value) {
+            $value->start_date = substr($value->start_date, 0, -3);
+            $value->end_date = substr($value->end_date, 0, -3);
+            $discountPercent = $this->setAppointmentDiscount($request->input('productId'), $value->start_date, $request->input('date'));
+            $value->discount_percent = $discountPercent;
+        }
+
+//        $now = date("Y-m-d H:i:s");
+//        if (strtotime(date("Y-m-d", strtotime($now))) == strtotime($request->input('date'))){
+//
+//            /* update product */
+//            DB::table('employee_appointments')
+//                ->where('active_day', 'like', '%'.$request->input('date').'%')
+//                ->where('is_active', '0')
+//                ->where('employee_id', $request->input('employeeId'))
+//                ->where('start_date', '>=', $nowDateTimes->format('H:i:s'))
+//                ->where('active_day', '>=', $nowDateTimes->format('Y-m-d'))
+//                ->update(['product_id' => $request->input('productId')]);
+//
+//            if ($isEmployeeHaveTimeLimit) {
+//
+//                $appointment = DB::table('employee_appointments')
+//                    ->where('active_day', 'like', '%'.$request->input('date').'%')
+//                    ->where('is_active', '0')
+//                    ->where('employee_id', $request->input('employeeId'))
+//                    ->where('start_date', '>=', $nowDateTimes->format('H:i:s'))
+//                    ->where('active_day', '>=', $nowDateTimes->format('Y-m-d'))
+//                    ->whereBetween('start_date', [$employeeActiveADay->start_date, $employeeActiveADay->end_date])
+//                    ->whereBetween('end_date', [$employeeActiveADay->start_date, $employeeActiveADay->end_date])
+//                    ->get();
+//                foreach ($appointment as $value) {
+//                    $value->start_date = substr($value->start_date, 0, -3);
+//                    $value->end_date = substr($value->end_date, 0, -3);
+//                    $discountPercent = $this->setAppointmentDiscount($request->input('productId'), $value->start_date, $request->input('date'));
+//                    $value->discount_percent = $discountPercent;
+//                }
+//            }
+//        } else {
+//            if ($isEmployeeHaveTimeLimit) {
+//                $updated = DB::table('employee_appointments')
+//                    ->where('active_day', 'like', '%' . $request->input('date') . '%')
+//                    ->where('is_active', '0')
+//                    ->where('employee_id', $request->input('employeeId'))
+//                    ->update(['product_id' => $request->input('productId')]);
+//
+//                $haveTimeLimit = false;
+//                if (!$haveTimeLimit) {
+//                    if ($employeeActiveDays[0]->start_date != '00:00:00' && $employeeActiveDays[0]->end_date != '00:00:00') {
+//                        $haveTimeLimit = true;
+//                    }
+//                }
+//                $appointment = null;
+//                if ($haveTimeLimit) {
+//                    $appointment = DB::table('employee_appointments')
+//                        ->where('active_day', 'like', '%' . $request->input('date') . '%')
+//                        ->where('is_active', '0')
+//                        ->where('employee_id', $request->input('employeeId'))
+//                        ->whereBetween('start_date', [$employeeActiveDays[0]->start_date, $employeeActiveDays[0]->end_date])
+//                        ->whereBetween('end_date', [$employeeActiveDays[0]->start_date, $employeeActiveDays[0]->end_date])
+//                        ->get();
+//                } else {
+//                    $appointment = DB::table('employee_appointments')
+//                        ->where('active_day', 'like', '%' . $request->input('date') . '%')
+//                        ->where('is_active', '0')
+//                        ->where('employee_id', $request->input('employeeId'))
+//                        ->get();
+//                }
+//
+//                foreach ($appointment as $value) {
+//                    $value->start_date = substr($value->start_date, 0, -3);
+//                    $value->end_date = substr($value->end_date, 0, -3);
+//                    $discountPercent = $this->setAppointmentDiscount($request->input('productId'), $value->start_date, $request->input('date'));
+//                    $value->discount_percent = $discountPercent;
+//                }
+//            }
+//        }
+
+        error_log(count($appointment));
+        error_log(json_encode($employeeActiveADay));
+        error_log(json_encode($isEmployeeHaveTimeLimit));
+        error_log(json_encode($employeeActiveADay->start_date));
+        error_log(json_encode($employeeActiveADay->end_date));
         if(count($appointment) > 0) {
             return $this->sendResponse(true, $appointment);
         } else {
-            if (!$acceptedActiveDay) {
-                return $this->sendResponse(true, 'Тухайн ажилтаны ажлын өдөр биш байна');
-            }
-
             $activeDay = new DateTime(date_create($request->input('date'))->format('Y-m-d H:i:s'));
             $nowAddDays = new DateTime(date_create()->format('Y-m-d H:i:s'));
             date_add($nowAddDays, date_interval_create_from_date_string('16 days'));
             if ($nowAddDays <= $activeDay) {
-                return $this->sendResponse(true, 'Та 7 ирэх хоногын дотор захиалга үүсгэх боломжтой');
+                return $this->sendResponse(true, 'Та ирэх 7 хоногын дотор захиалга үүсгэх боломжтой');
             }
 
-            $startDate = date_time_set(date_create($request->input('date')), date('H', strtotime($market->start_date)), date('i', strtotime($market->start_date)));
-            $endDate = date_time_set(date_create($request->input('date')), date('H', strtotime($market->end_date)), date('i', strtotime($market->end_date)));
+            $startDate = date_time_set(
+                date_create($request->input('date')), date('H', strtotime($market->start_date)), date('i', strtotime($market->start_date))
+            );
+
+            $endDate = date_time_set(
+                date_create($request->input('date')), date('H', strtotime($market->end_date)), date('i', strtotime($market->end_date))
+            );
 
             $nowDateTime = new DateTime();
 
@@ -445,13 +474,15 @@ class UserAPIController extends Controller
                     if ($inserted) {
                         $getTime = $betweenDate['startTime']->format("H:i");
                         $employeeAppointment = DB::table('employee_appointments')
-                            ->where([
-                                ['employee_id', '=', $request->input('employeeId')],
-                                ['active_day', '=', $betweenDate['activeDate']],
-                                ['product_id', '=', $request->input('productId')],
-                                ['start_date', 'like', '%'.$getTime.'%']
-                            ])->get();
-                        array_push($tableResult, $employeeAppointment->get(0));
+                            ->where('employee_id', $request->input('employeeId'))
+                            ->where('active_day', $betweenDate['activeDate'])
+                            ->where('product_id', $request->input('productId'))
+                            ->whereBetween('start_date', [$employeeActiveADay->start_date, $employeeActiveADay->end_date])
+                            ->whereBetween('end_date', [$employeeActiveADay->start_date, $employeeActiveADay->end_date])
+                            ->get();
+                        if ($employeeAppointment->get(0)) {
+                            array_push($tableResult, $employeeAppointment->get(0));
+                        }
                     }
                 }
             }
@@ -579,7 +610,6 @@ class UserAPIController extends Controller
             } else {
                 $employee->employeeName = 'нэр оруулж өгөөгүй байна';
             }
-
             $employee->active_date = $days;
         }
         return $this->sendResponse(true, $employeeData);
@@ -618,7 +648,7 @@ class UserAPIController extends Controller
 
         foreach($request->days as $activeDay) {
             error_log(json_encode($activeDay['day']));
-            $days = DB::table('active_job_days')
+            DB::table('active_job_days')
                 ->where('employee_id', $employee->id)
                 ->where('day', $activeDay['day'])
                 ->update(
