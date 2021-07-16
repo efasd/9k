@@ -561,7 +561,7 @@ class UserAPIController extends Controller
 
     function getEmployee($marketId) {
         if (!$marketId) {
-            return $this->sendResponse(false, 'Маркет сонгоогүй байна');
+            return $this->sendError(false, 'Маркет сонгоогүй байна');
         }
 
         $employeeData = DB::table('employee_markets')
@@ -598,11 +598,31 @@ class UserAPIController extends Controller
             return $this->sendResponse(true, 'Ажилтаны мэдээлэл салбар дээр бүртгэлгүй байна та шалгана уу');
         }
 
-        $employee =
+        $employee = DB::table('users')->find($request->input('userId'));
+        if ($employee) {
+            $this->sendError('Хэрэглэгчийн мэдээлэл байхгүй байна');
+        }
 
         $days = DB::table('active_job_days')
-            ->where('employee_id', $employee->user_id)
+            ->where('employee_id', $employee->id)
             ->get();
 
+        if (count($request->days) === 0) {
+            $this->sendError('Цагийн хувиарын мэдээлэл байхгүй байна');
+        }
+
+        foreach($request->days as $activeDay) {
+            error_log(json_encode($activeDay['day']));
+            $days = DB::table('active_job_days')
+                ->where('employee_id', $employee->id)
+                ->where('day', $activeDay['day'])
+                ->update(
+                    [
+                        'start_date' => $activeDay['start_date'],
+                        'end_date' => $activeDay['end_date'],
+                        'active' => $activeDay['active']
+                    ]
+                );
+        }
     }
 }
