@@ -577,20 +577,32 @@ class UserAPIController extends Controller
 
             $employee->active_date = $days;
         }
-        return $employeeData;
+        return $this->sendResponse(true, $employeeData);
     }
 
-    function setEmployee($marketId, $userId) {
-        if (!$marketId) {
+    function setEmployee(Request $request) {
+        if (!$request->input('marketId')) {
             return $this->sendResponse(false, 'Маркет сонгоогүй байна');
         }
-        if (!$userId) {
+
+        if (!$request->input('userId')) {
             return $this->sendResponse(false, 'Хэрэглэгч сонгоогүй байна');
         }
 
-        $employeeData = DB::table('user_markets')
-            ->where('market_id', $marketId)
+        $employeeCheck = DB::table('employee_markets')
+            ->where('market_id', $request->input('marketId'))
+            ->where('user_id', $request->input('userId'))
             ->get();
-        return $employeeData;
+
+        if (count($employeeCheck) === 0) {
+            return $this->sendResponse(true, 'Ажилтаны мэдээлэл салбар дээр бүртгэлгүй байна та шалгана уу');
+        }
+
+        $employee =
+
+        $days = DB::table('active_job_days')
+            ->where('employee_id', $employee->user_id)
+            ->get();
+
     }
 }

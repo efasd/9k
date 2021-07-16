@@ -35,8 +35,8 @@ Route::prefix('manager')->group(function () {
     Route::get('logout', 'API\Manager\UserAPIController@logout');
     Route::get('settings', 'API\Manager\UserAPIController@settings');
 
-
     Route::get('employee/{marketId}', 'API\UserAPIController@getEmployee');
+    Route::post('employee/appointment', 'API\UserAPIController@setEmployee');
 });
 
 
