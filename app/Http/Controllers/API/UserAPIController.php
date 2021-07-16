@@ -573,7 +573,12 @@ class UserAPIController extends Controller
                 ->where('employee_id', $employee->user_id)
                 ->get();
 
-            $employee->detail = DB::table('users')->find($employee->user_id);
+            $emp = DB::table('users')->find($employee->user_id);
+            if ($emp) {
+                $employee->employeeName = $emp->name;
+            } else {
+                $employee->employeeName = 'нэр оруулж өгөөгүй байна';
+            }
 
             $employee->active_date = $days;
         }
