@@ -152,4 +152,12 @@ Route::middleware('auth:api')->group(function () {
     Route::resource('coupons', 'API\CouponAPIController')->except([
         'show'
     ]);
+
+    Route::prefix('employees')->group(function () {
+        Route::get('market/{marketId}', 'API\EmployeeController@index');
+        Route::get('market/{marketId}/{employeeId}', 'API\EmployeeController@findOne');
+        Route::put('market/{marketId}/{employeeId}', 'API\EmployeeController@update');
+        Route::post('market/{marketId}', 'API\EmployeeController@create');
+        Route::delete('market/{marketId}/{employeeId}', 'API\EmployeeController@destroy');
+    });
 });

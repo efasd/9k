@@ -235,7 +235,6 @@ class OrderAPIController extends Controller
 
             if ($request->getStatusCode() === 200) {
                 $invoiceRes = json_decode($request->getBody());
-                error_log(json_encode($request));
                 $insertInvoice = DB::table('invoice')
                     ->updateOrInsert(
                         [
@@ -253,6 +252,7 @@ class OrderAPIController extends Controller
                         ]
                     );
                 $response->original['data']['urls'] = $invoiceRes->urls;
+                $response->original['data']['qrcode'] = $invoiceRes->qr_image;
                 $result = new stdClass();
                 $result->message = $response;
                 $result->success = true;
